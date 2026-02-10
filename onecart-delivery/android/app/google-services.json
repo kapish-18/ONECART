@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "218522154869",
+    "project_id": "onecart-delivery",
+    "storage_bucket": "onecart-delivery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:218522154869:android:804822e0d69f19b85e453c",
+        "android_client_info": {
+          "package_name": "com.anonymous.onecartdelivery"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCs8ubZbll50wsxMctz0AukkpWZE6-pCQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
