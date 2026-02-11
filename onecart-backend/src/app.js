@@ -7,17 +7,21 @@ import authRoutes from "./routes/auth.route.js";
 import orderRoutes from "./routes/order.routes.js";
 import deliveryRoutes from "./routes/delivery.routes.js";
 import systemRoutes from "./routes/system.routes.js";
+import adminAnalyticsRoutes from "./routes/admin.analytics.routes.js"; // ✅ FIX
 
 const app = express();
 
+/* ================= MIDDLEWARE ================= */
 app.use(cors());
 app.use(express.json());
 
+/* ================= ROUTES ================= */
 app.use("/health", healthRoutes);
 app.use("/users", userRoutes);
 app.use("/auth", authRoutes);
 app.use("/orders", orderRoutes);
 app.use("/delivery", deliveryRoutes);
-app.use("/system", systemRoutes); // ✅ THIS WAS MISSING
+app.use("/system", systemRoutes);
+app.use("/admin/analytics", adminAnalyticsRoutes); // ✅ THIS WAS THE MISSING PIECE
 
 export default app;
