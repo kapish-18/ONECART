@@ -8,6 +8,7 @@ import orderRoutes from "./routes/order.routes.js";
 import deliveryRoutes from "./routes/delivery.routes.js";
 import systemRoutes from "./routes/system.routes.js";
 import adminAnalyticsRoutes from "./routes/admin.analytics.routes.js"; // ✅ FIX
+import adminUserRoutes from "./routes/admin.users.routes.js";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use("/health", healthRoutes);
 app.use("/users", userRoutes);
 app.use("/auth", authRoutes);
+app.use("/admin/users", adminUserRoutes);
 app.use("/orders", orderRoutes);
 app.use("/delivery", deliveryRoutes);
 app.use("/system", systemRoutes);

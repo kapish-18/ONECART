@@ -18,13 +18,20 @@ export default function AppNavigator() {
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const checkAuth = async () => {
+    const user = await getUser();
+    setIsLoggedIn(!!user);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const checkAuth = async () => {
-      const user = await getUser();
-      setIsLoggedIn(!!user);
-      setLoading(false);
-    };
     checkAuth();
+  }, []);
+
+  // 🔥 THIS IS THE FIX
+  useEffect(() => {
+    const interval = setInterval(checkAuth, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {
@@ -40,47 +47,18 @@ export default function AppNavigator() {
       <Stack.Navigator>
         {isLoggedIn ? (
           <>
-            <Stack.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{ title: "OneCart" }}
-            />
-
-            <Stack.Screen
-              name="Menu"
-              component={MenuScreen}
-              options={{ title: "Select Items" }}
-            />
-
-            <Stack.Screen
-              name="ReviewOrder"
-              component={ReviewOrderScreen}
-              options={{ title: "Review Order" }}
-            />
-
-            {/* ✅ ADD THIS */}
-            <Stack.Screen
-              name="MyOrders"
-              component={MyOrdersScreen}
-              options={{ title: "My Orders" }}
-            />
+            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="Menu" component={MenuScreen} />
+            <Stack.Screen name="ReviewOrder" component={ReviewOrderScreen} />
+            <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
           </>
         ) : (
           <>
-            <Stack.Screen
-              name="Login"
-              component={LoginScreen}
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="Otp"
-              component={OtpScreen}
-              options={{ headerShown: false }}
-            />
+            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Otp" component={OtpScreen} options={{ headerShown: false }} />
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
-

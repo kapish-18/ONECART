@@ -1,5 +1,6 @@
 import express from "express";
 import User from "../models/User.model.js";
+import { sendOtpEmail } from "../utils/sendEmail.js";
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ router.post("/send-otp", async (req, res) => {
       }
     );
 
-    console.log("OTP for", email, ":", otp); // TEMP: console only
+    await sendOtpEmail(email, otp);
 
     res.json({ message: "OTP sent" });
   } catch (error) {

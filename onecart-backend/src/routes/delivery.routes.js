@@ -4,9 +4,7 @@ import User from "../models/User.model.js";
 
 const router = express.Router();
 
-/* ======================================================
-   GET DELIVERY USER
-====================================================== */
+/* ================= GET DELIVERY USER ================= */
 router.get("/me", async (req, res) => {
   try {
     const { email } = req.query;
@@ -22,14 +20,17 @@ router.get("/me", async (req, res) => {
   }
 });
 
-/* ======================================================
-   GET CURRENT ASSIGNED ORDER
-====================================================== */
+/* ================= GET CURRENT ASSIGNED ORDER ================= */
 router.get("/my-order", async (req, res) => {
   try {
     const { email } = req.query;
 
-    const user = await User.findOne({ email, role: "delivery" });
+    const user = await User.findOne({
+      email,
+      role: "delivery",
+      isApproved: true,
+    });
+
     if (!user) {
       return res.status(404).json({ error: "Delivery user not found" });
     }
@@ -47,21 +48,19 @@ router.get("/my-order", async (req, res) => {
   }
 });
 
-/* ======================================================
-   UPDATE AVAILABILITY
-====================================================== */
+/* ================= UPDATE AVAILABILITY ================= */
 router.patch("/availability", async (req, res) => {
   try {
     const { email, isAvailable } = req.body;
 
     const user = await User.findOneAndUpdate(
-      { email, role: "delivery" },
+      { email, role: "delivery", isApproved: true },
       { isAvailable },
       { new: true }
     );
 
     if (!user) {
-      return res.status(404).json({ error: "Delivery user not found" });
+      return res.status(404).json({ error: "Delivery user not approved" });
     }
 
     res.json({ isAvailable: user.isAvailable });
@@ -70,31 +69,24 @@ router.patch("/availability", async (req, res) => {
   }
 });
 
-/* ======================================================
-   GET AVAILABLE ORDERS
-====================================================== */
+/* ================= GET AVAILABLE ORDERS ================= */
 router.get("/orders", async (req, res) => {
   try {
     const orders = await Order.find({
       status: "CREATED",
-      $or: [
-        { deliveryPerson: { $exists: false } },
-        { deliveryPerson: null },
-      ],
+      deliveryPerson: null,
     })
       .populate("user", "email hostelBlock")
       .sort({ createdAt: 1 });
 
     res.json(orders);
   } catch (err) {
-    console.error("Delivery orders error:", err);
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch orders" });
   }
 });
 
-/* ======================================================
-   ACCEPT ORDER (ATOMIC)
-====================================================== */
+/* ================= ACCEPT ORDER ================= */
 router.post("/accept", async (req, res) => {
   try {
     const { orderId, deliveryEmail } = req.body;
@@ -103,13 +95,15 @@ router.post("/accept", async (req, res) => {
       email: deliveryEmail,
       role: "delivery",
       isAvailable: true,
+      isApproved: true,
     });
 
     if (!user) {
-      return res.status(400).json({ error: "Delivery person not available" });
+      return res.status(400).json({
+        error: "Delivery person not approved or not available",
+      });
     }
 
-    // prevent multiple active orders
     const activeOrder = await Order.findOne({
       deliveryPerson: user._id,
       status: "ASSIGNED",
@@ -121,7 +115,6 @@ router.post("/accept", async (req, res) => {
       });
     }
 
-    // atomic assignment
     const order = await Order.findOneAndUpdate(
       { _id: orderId, status: "CREATED" },
       {
@@ -137,19 +130,14 @@ router.post("/accept", async (req, res) => {
       return res.status(400).json({ error: "Order not available" });
     }
 
-    res.json({
-      message: "Order accepted",
-      order,
-    });
+    res.json({ message: "Order accepted", order });
   } catch (err) {
-    console.error("Accept order error:", err);
+    console.error(err);
     res.status(500).json({ error: "Failed to accept order" });
   }
 });
 
-/* ======================================================
-   MARK DELIVERED
-====================================================== */
+/* ================= MARK DELIVERED ================= */
 router.post("/deliver", async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -161,87 +149,11 @@ router.post("/deliver", async (req, res) => {
 
     order.status = "DELIVERED";
     order.deliveredAt = new Date();
-    order.deliveryFee = order.deliveryFee ?? 30;
-
     await order.save();
 
-    res.json({
-      message: "Order delivered",
-      orderId: order._id,
-    });
+    res.json({ message: "Order delivered" });
   } catch {
     res.status(500).json({ error: "Failed to mark delivered" });
-  }
-});
-
-/* ======================================================
-   DELIVERY EARNINGS
-====================================================== */
-router.get("/earnings", async (req, res) => {
-  try {
-    const { email } = req.query;
-
-    const user = await User.findOne({ email, role: "delivery" });
-    if (!user) {
-      return res.status(404).json({ error: "Delivery user not found" });
-    }
-
-    const orders = await Order.find({
-      deliveryPerson: user._id,
-      status: "DELIVERED",
-    }).sort({ deliveredAt: -1 });
-
-    const today = new Date().toDateString();
-
-    const todayEarnings = orders
-      .filter(
-        (o) =>
-          o.deliveredAt &&
-          new Date(o.deliveredAt).toDateString() === today
-      )
-      .reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
-
-    const totalEarnings = orders.reduce(
-      (sum, o) => sum + (o.deliveryFee || 0),
-      0
-    );
-
-    res.json({
-      todayEarnings,
-      totalEarnings,
-      totalOrders: orders.length,
-      orders,
-    });
-  } catch {
-    res.status(500).json({ error: "Failed to fetch earnings" });
-  }
-});
-
-/* ======================================================
-   🔔 SAVE PUSH TOKEN (THIS WAS MISSING ❗)
-====================================================== */
-router.post("/push-token", async (req, res) => {
-  try {
-    const { email, pushToken } = req.body;
-
-    if (!pushToken) {
-      return res.status(400).json({ error: "Push token required" });
-    }
-
-    const user = await User.findOneAndUpdate(
-      { email, role: "delivery" },
-      { pushToken },
-      { new: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({ error: "Delivery user not found" });
-    }
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Push token save error:", err);
-    res.status(500).json({ error: "Failed to save push token" });
   }
 });
 

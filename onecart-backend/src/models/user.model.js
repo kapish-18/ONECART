@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: function () {
-        return this.role === "user";
+        return this?.role === "user";
       },
     },
 
@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     hostelBlock: {
       type: String,
       required: function () {
-        return this.role === "user";
+        return this?.role === "user";
       },
     },
 
@@ -47,22 +47,22 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
-    /**
-     * 🔔 Push notification token
-     * (Expo / FCM / APNs – future use)
-     */
     pushToken: {
       type: String,
       default: null,
     },
 
-    /**
-     * 💰 Optional lifetime earnings cache
-     * (not required, but nice for analytics later)
-     */
     totalEarnings: {
       type: Number,
       default: 0,
+    },
+
+    // 🔐 NEW FIELD (for delivery approval later)
+    isApproved: {
+      type: Boolean,
+      default: function () {
+        return this?.role === "delivery" ? false : true;
+      },
     },
   },
   {
@@ -71,7 +71,6 @@ const userSchema = new mongoose.Schema(
 );
 
 /* ================= INDEXES ================= */
-// Helps when querying delivery availability
 userSchema.index({ role: 1, isAvailable: 1 });
 
 const User = mongoose.model("User", userSchema);
