@@ -36,13 +36,29 @@ const orderSchema = new mongoose.Schema(
       ref: "User",
     },
 
-    // ✅ NEW
     deliveryFee: {
       type: Number,
       default: 30,
     },
 
-    // ✅ NEW
+    /* ================= PAYMENT FIELDS ================= */
+
+    foodAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    totalAmount: {
+      type: Number,
+      default: 0,
+    },
+
+    paymentStatus: {
+      type: String,
+      enum: ["PENDING", "PAID"],
+      default: "PENDING",
+    },
+
     deliveredAt: {
       type: Date,
     },

@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { BASE_URL } from "../config/api";
 import { getUser } from "../utils/auth";
 
@@ -7,41 +7,12 @@ export default function ReviewOrderScreen({ route, navigation }: any) {
   const { order } = route.params;
 
   const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
-  const [totalItems, setTotalItems] = useState(0);
-  const [peakAdded, setPeakAdded] = useState(false);
-
-  /* ================= LOAD DELIVERY FEE PREVIEW ================= */
-
-  useEffect(() => {
-    previewFee();
-  }, []);
-
-  const previewFee = async () => {
-    try {
-      const res = await fetch(`${BASE_URL}/orders/preview`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          outlets: order.outlets,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setDeliveryFee(data.deliveryFee);
-        setTotalItems(data.totalItems);
-        setPeakAdded(data.peakAdded);
-      }
-    } catch (err) {
-      console.log("Fee preview failed");
-    }
-  };
-
-  /* ================= PLACE ORDER ================= */
+  const [placing, setPlacing] = useState(false);
 
   const placeOrder = async () => {
     try {
+      setPlacing(true);
+
       const user = await getUser();
 
       const res = await fetch(`${BASE_URL}/orders`, {
@@ -60,18 +31,22 @@ export default function ReviewOrderScreen({ route, navigation }: any) {
         return;
       }
 
+      // 🔥 Capture backend fee
+      setDeliveryFee(data.deliveryFee);
+
       Alert.alert(
         "Order Placed 🎉",
         `Delivery Fee: ₹${data.deliveryFee}`
       );
 
       navigation.popToTop();
+
     } catch (err) {
       Alert.alert("Network Error", "Could not connect to server.");
+    } finally {
+      setPlacing(false);
     }
   };
-
-  /* ================= UI ================= */
 
   return (
     <ScrollView
@@ -94,42 +69,28 @@ export default function ReviewOrderScreen({ route, navigation }: any) {
         </View>
       ))}
 
-      {/* ================= DELIVERY SUMMARY ================= */}
-
-      <View
-        style={{
-          borderWidth: 1,
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 24,
-        }}
-      >
-        <Text style={{ fontSize: 16 }}>
-          Total Items: {totalItems}
-        </Text>
-
-        <Text style={{ fontSize: 16, marginTop: 6 }}>
-          Delivery Fee: ₹{deliveryFee ?? "..."}
-        </Text>
-
-        {peakAdded && (
-          <Text style={{ color: "red", marginTop: 6 }}>
-            🔥 Peak Time Fee Applied
+      {/* Show fee if already placed */}
+      {deliveryFee !== null && (
+        <View style={{ marginBottom: 20 }}>
+          <Text style={{ fontSize: 16 }}>
+            Delivery Fee: ₹{deliveryFee}
           </Text>
-        )}
-      </View>
+        </View>
+      )}
 
       <TouchableOpacity
         onPress={placeOrder}
+        disabled={placing}
         style={{
           backgroundColor: "#000",
           paddingVertical: 16,
           borderRadius: 12,
           alignItems: "center",
+          marginTop: 16,
         }}
       >
         <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-          Place Order
+          {placing ? "Placing..." : "Place Order"}
         </Text>
       </TouchableOpacity>
     </ScrollView>

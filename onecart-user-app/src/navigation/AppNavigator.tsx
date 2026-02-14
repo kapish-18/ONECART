@@ -9,6 +9,7 @@ import OtpScreen from "../screens/OtpScreen";
 import MenuScreen from "../screens/MenuScreen";
 import ReviewOrderScreen from "../screens/ReviewOrderScreen";
 import MyOrdersScreen from "../screens/MyOrdersScreen";
+import PaymentScreen from "../screens/PaymentScreen"; // ✅ NEW
 
 import { getUser } from "../utils/auth";
 
@@ -28,7 +29,7 @@ export default function AppNavigator() {
     checkAuth();
   }, []);
 
-  // 🔥 THIS IS THE FIX
+  // Auto re-check login state
   useEffect(() => {
     const interval = setInterval(checkAuth, 1000);
     return () => clearInterval(interval);
@@ -51,11 +52,24 @@ export default function AppNavigator() {
             <Stack.Screen name="Menu" component={MenuScreen} />
             <Stack.Screen name="ReviewOrder" component={ReviewOrderScreen} />
             <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
+            <Stack.Screen
+              name="Payment"
+              component={PaymentScreen}
+              options={{ title: "Complete Payment" }}
+            />
           </>
         ) : (
           <>
-            <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Otp" component={OtpScreen} options={{ headerShown: false }} />
+            <Stack.Screen
+              name="Login"
+              component={LoginScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Otp"
+              component={OtpScreen}
+              options={{ headerShown: false }}
+            />
           </>
         )}
       </Stack.Navigator>

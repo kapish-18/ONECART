@@ -1,28 +1,39 @@
-import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { useEffect, useState } from "react";
 import { BASE_URL } from "../config/api";
 import { getUser } from "../utils/auth";
+import { useNavigation } from "@react-navigation/native";
 
 export default function MyOrdersScreen() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation<any>();
 
   const fetchOrders = async () => {
-    const user = await getUser();
+    try {
+      const user = await getUser();
 
-    const res = await fetch(
-      `${BASE_URL}/orders/user/${encodeURIComponent(user.email)}`
-    );
+      const res = await fetch(
+        `${BASE_URL}/orders/user/${encodeURIComponent(user.email)}`
+      );
 
-    const data = await res.json();
-    setOrders(data);
-    setLoading(false);
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.log("Fetch orders error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchOrders();
-
-    // 🔄 Auto refresh every 5s
     const interval = setInterval(fetchOrders, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -43,18 +54,8 @@ export default function MyOrdersScreen() {
     );
   }
 
-  const statusColor = (status: string) => {
-    if (status === "DELIVERED") return "green";
-    if (status === "ASSIGNED") return "blue";
-    return "orange"; // CREATED
-  };
-
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 24 }}
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
       <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 24 }}>
         My Orders
       </Text>
@@ -64,32 +65,52 @@ export default function MyOrdersScreen() {
           key={order._id}
           style={{
             borderWidth: 1,
-            borderColor: "#ccc",
             borderRadius: 12,
             padding: 16,
             marginBottom: 16,
           }}
         >
-          {/* Status */}
-          <Text style={{ fontWeight: "bold", marginBottom: 6 }}>
-            Status:{" "}
-            <Text style={{ color: statusColor(order.status) }}>
-              {order.status}
+          <Text>Status: {order.status}</Text>
+
+          <Text>Delivery Fee: ₹{order.deliveryFee}</Text>
+
+          {order.foodAmount > 0 && (
+            <>
+              <Text>Food Amount: ₹{order.foodAmount}</Text>
+              <Text style={{ fontWeight: "bold" }}>
+                Total: ₹{order.totalAmount}
+              </Text>
+            </>
+          )}
+
+          {/* ✅ PAYMENT BUTTON FIXED */}
+          {order.status === "ASSIGNED" &&
+            order.totalAmount > 0 &&
+            order.paymentStatus === "PENDING" && (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("Payment", {
+                    orderId: order._id,   // 🔥 FIX HERE
+                  })
+                }
+                style={{
+                  backgroundColor: "green",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginTop: 12,
+                }}
+              >
+                <Text style={{ color: "#fff", textAlign: "center" }}>
+                  Pay ₹{order.totalAmount}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+          {order.paymentStatus === "PAID" && (
+            <Text style={{ color: "green", marginTop: 10 }}>
+              ✅ Payment Completed
             </Text>
-          </Text>
-
-          {/* Timestamp */}
-          <Text style={{ fontSize: 12, color: "#666", marginBottom: 12 }}>
-            {new Date(order.createdAt).toLocaleString()}
-          </Text>
-
-          {/* Outlets */}
-          {order.outlets.map((o: any, index: number) => (
-            <View key={index} style={{ marginBottom: 8 }}>
-              <Text style={{ fontWeight: "600" }}>{o.outletName}</Text>
-              <Text>{o.items || "No items"}</Text>
-            </View>
-          ))}
+          )}
         </View>
       ))}
     </ScrollView>

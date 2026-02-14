@@ -7,74 +7,7 @@ import { sendPushNotification } from "../utils/sendPush.js";
 const router = express.Router();
 
 /* ======================================================
-   HELPER: CALCULATE DELIVERY FEE
-====================================================== */
-function calculateDeliveryFee(outlets, peakMode = false) {
-  const outletCount = outlets.length;
-  let totalItems = 0;
-
-  for (const o of outlets) {
-    if (!o.items) continue;
-
-    const lines = o.items.split("\n");
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      const match = trimmed.match(/x(\d+)/i);
-
-      if (match) {
-        totalItems += parseInt(match[1], 10);
-      } else {
-        totalItems += 1;
-      }
-    }
-  }
-
-  let deliveryFee;
-
-  /* ================= PRICING TIERS ================= */
-
-  // 🔥 EXTRA LARGE
-  if (totalItems > 5) {
-    deliveryFee = 59;
-  }
-
-  // SMALL
-  else if (
-    (outletCount === 1 && totalItems <= 2) ||
-    (outletCount === 2 && totalItems === 2)
-  ) {
-    deliveryFee = 29;
-  }
-
-  // MEDIUM
-  else if (
-    (outletCount === 1 && totalItems <= 3) ||
-    (outletCount === 2 && totalItems <= 3)
-  ) {
-    deliveryFee = 39;
-  }
-
-  // BIG
-  else {
-    deliveryFee = 49;
-  }
-
-  // 🔥 Peak surcharge
-  if (peakMode) {
-    deliveryFee += 10;
-  }
-
-  return {
-    deliveryFee,
-    totalItems,
-  };
-}
-
-/* ======================================================
-   GET ALL ORDERS (ADMIN)
+   GET ALL ORDERS (ADMIN PANEL)
 ====================================================== */
 router.get("/", async (req, res) => {
   try {
@@ -91,31 +24,25 @@ router.get("/", async (req, res) => {
 });
 
 /* ======================================================
-   PREVIEW DELIVERY FEE
+   GET USER ORDERS
 ====================================================== */
-router.post("/preview", async (req, res) => {
+router.get("/user/:email", async (req, res) => {
   try {
-    const { outlets } = req.body;
+    const { email } = req.params;
 
-    if (!outlets || outlets.length === 0) {
-      return res.status(400).json({ error: "Invalid order data" });
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const config = await SystemConfig.findOne();
+    const orders = await Order.find({ user: user._id })
+      .populate("deliveryPerson", "email")
+      .sort({ createdAt: -1 });
 
-    const { deliveryFee, totalItems } = calculateDeliveryFee(
-      outlets,
-      config?.peakMode
-    );
-
-    res.json({
-      deliveryFee,
-      totalItems,
-      peakMode: !!config?.peakMode,
-    });
+    res.json(orders);
   } catch (err) {
-    console.error("Preview fee error:", err);
-    res.status(500).json({ error: "Failed to preview delivery fee" });
+    console.error("Fetch user orders error:", err);
+    res.status(500).json({ error: "Failed to fetch user orders" });
   }
 });
 
@@ -131,7 +58,6 @@ router.post("/", async (req, res) => {
     }
 
     const config = await SystemConfig.findOne();
-
     if (!config || !config.acceptingOrders) {
       return res.status(403).json({
         error: "Ordering is currently disabled",
@@ -143,10 +69,53 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const { deliveryFee } = calculateDeliveryFee(
-      outlets,
-      config?.peakMode
-    );
+    /* ================= DELIVERY FEE LOGIC ================= */
+
+    const outletCount = outlets.length;
+    let totalItems = 0;
+
+    for (const o of outlets) {
+      if (!o.items) continue;
+
+      const lines = o.items.split("\n");
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        const match = trimmed.match(/x(\d+)/i);
+        if (match) {
+          totalItems += parseInt(match[1], 10);
+        } else {
+          totalItems += 1;
+        }
+      }
+    }
+
+    // 🔒 SAFETY DEFAULT
+    let deliveryFee = 29;
+
+    if (totalItems > 5) {
+      deliveryFee = 59;
+    } else if (
+      (outletCount === 1 && totalItems <= 2) ||
+      (outletCount === 2 && totalItems === 2)
+    ) {
+      deliveryFee = 29;
+    } else if (
+      (outletCount === 1 && totalItems <= 3) ||
+      (outletCount === 2 && totalItems <= 3)
+    ) {
+      deliveryFee = 39;
+    } else {
+      deliveryFee = 49;
+    }
+
+    if (config?.peakMode) {
+      deliveryFee += 10;
+    }
+
+    /* ================= CREATE ORDER ================= */
 
     const order = await Order.create({
       user: user._id,
@@ -154,20 +123,22 @@ router.post("/", async (req, res) => {
       hostelBlock: user.hostelBlock,
       status: "CREATED",
       deliveryPerson: null,
-      deliveryFee,
+      deliveryFee: deliveryFee, // explicit safe assignment
+      foodAmount: 0,
+      totalAmount: 0,
+      paymentStatus: "PENDING",
     });
 
     console.log("🟢 ORDER CREATED:", order._id);
+    console.log("💰 DELIVERY FEE SAVED:", deliveryFee);
 
-    /* ================= PUSH ================= */
+    /* ================= PUSH NOTIFICATION ================= */
 
     const deliveryUsers = await User.find({
       role: "delivery",
       isAvailable: true,
       pushToken: { $ne: null },
     });
-
-    console.log("📦 Notifying delivery users:", deliveryUsers.length);
 
     for (const deliveryUser of deliveryUsers) {
       await sendPushNotification(

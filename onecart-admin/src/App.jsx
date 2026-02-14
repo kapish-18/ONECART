@@ -102,9 +102,9 @@ export default function App() {
 
   /* ================= GROUPING ================= */
 
-  const newOrders = orders.filter(o => o.status === "CREATED");
-  const ongoingOrders = orders.filter(o => o.status === "ASSIGNED");
-  const completedOrders = orders.filter(o => o.status === "DELIVERED");
+  const newOrders = orders.filter((o) => o.status === "CREATED");
+  const ongoingOrders = orders.filter((o) => o.status === "ASSIGNED");
+  const completedOrders = orders.filter((o) => o.status === "DELIVERED");
 
   /* ================= ORDER CARD ================= */
 
@@ -123,6 +123,35 @@ export default function App() {
       <p><b>Hostel:</b> {order.hostelBlock}</p>
       <p><b>Status:</b> {order.status}</p>
 
+      {/* 💰 PAYMENT DETAILS */}
+      <hr />
+      <p><b>Delivery Fee:</b> ₹{order.deliveryFee || 0}</p>
+
+      {order.foodAmount > 0 && (
+        <p><b>Food Amount:</b> ₹{order.foodAmount}</p>
+      )}
+
+      {order.totalAmount > 0 && (
+        <p style={{ fontWeight: "bold" }}>
+          <b>Total Amount:</b> ₹{order.totalAmount}
+        </p>
+      )}
+
+      {order.paymentStatus && (
+        <p>
+          <b>Payment:</b>{" "}
+          <span
+            style={{
+              color: order.paymentStatus === "PAID" ? "green" : "red",
+              fontWeight: "bold",
+            }}
+          >
+            {order.paymentStatus}
+          </span>
+        </p>
+      )}
+
+      {/* STATUS BUTTONS */}
       {order.status === "CREATED" && (
         <button
           onClick={() => updateStatus(order._id, "ASSIGNED")}
@@ -139,6 +168,8 @@ export default function App() {
           Mark Delivered
         </button>
       )}
+
+      <hr />
 
       <p><b>Outlets:</b></p>
       <ul>

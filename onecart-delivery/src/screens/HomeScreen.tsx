@@ -7,14 +7,14 @@ import {
   ScrollView,
   Alert,
   Vibration,
+  TextInput,
 } from "react-native";
 import { useEffect, useRef, useState } from "react";
 import { BASE_URL } from "../config/api";
 import { getUser } from "../utils/auth";
-import { useNavigation, useIsFocused } from "@react-navigation/native";
+import { useIsFocused } from "@react-navigation/native";
 
 export default function HomeScreen() {
-  const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
 
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,8 @@ export default function HomeScreen() {
   const [assignedOrder, setAssignedOrder] = useState<any | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [todayEarnings, setTodayEarnings] = useState(0);
+
+  const [foodAmountInput, setFoodAmountInput] = useState("");
 
   const lastOrderCountRef = useRef(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -174,7 +176,33 @@ export default function HomeScreen() {
     await loadAssignedOrder();
   };
 
+  /* ===== SET FOOD AMOUNT ===== */
+
+  const setFoodAmount = async () => {
+    if (!foodAmountInput) {
+      Alert.alert("Enter food amount");
+      return;
+    }
+
+    await fetch(`${BASE_URL}/delivery/set-food-amount`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId: assignedOrder._id,
+        amount: Number(foodAmountInput),
+      }),
+    });
+
+    Alert.alert("Food amount set");
+    await loadAssignedOrder();
+  };
+
   const markDelivered = async (orderId: string) => {
+    if (assignedOrder.paymentStatus !== "PAID") {
+      Alert.alert("Payment not completed yet");
+      return;
+    }
+
     await fetch(`${BASE_URL}/delivery/deliver`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -184,6 +212,8 @@ export default function HomeScreen() {
     Alert.alert("Order Delivered 🎉");
 
     setAssignedOrder(null);
+    setFoodAmountInput("");
+
     await Promise.all([
       loadTodayEarnings(),
       loadAssignedOrder(),
@@ -201,16 +231,11 @@ export default function HomeScreen() {
     );
   }
 
-  /* ================= NOT APPROVED ================= */
-
   if (!isApproved) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
         <Text style={{ fontSize: 18, textAlign: "center" }}>
           ⏳ Waiting for admin approval
-        </Text>
-        <Text style={{ marginTop: 10, textAlign: "center", color: "#666" }}>
-          You will be able to deliver orders once approved.
         </Text>
       </View>
     );
@@ -228,13 +253,7 @@ export default function HomeScreen() {
         💰 Today’s Earnings: ₹{todayEarnings}
       </Text>
 
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          marginVertical: 16,
-        }}
-      >
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginVertical: 16 }}>
         <Text>{isAvailable ? "AVAILABLE" : "NOT AVAILABLE"}</Text>
         <Switch
           value={isAvailable}
@@ -243,49 +262,85 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* ================= ASSIGNED ORDER ================= */}
-
       {assignedOrder && (
         <>
           <Text style={{ fontSize: 18, marginTop: 12 }}>
             Current Delivery
           </Text>
 
-          <View
-            style={{
-              borderWidth: 1,
-              borderRadius: 10,
-              padding: 12,
-              marginTop: 12,
-            }}
-          >
+          <View style={{ borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 12 }}>
             <Text>
               <Text style={{ fontWeight: "bold" }}>Hostel:</Text>{" "}
               {assignedOrder.user?.hostelBlock}
             </Text>
 
             <Text style={{ marginTop: 6 }}>
-              💵 Fee: ₹{assignedOrder.deliveryFee || 30}
+              Delivery Fee: ₹{assignedOrder.deliveryFee}
             </Text>
 
-            <TouchableOpacity
-              onPress={() => markDelivered(assignedOrder._id)}
-              style={{
-                backgroundColor: "green",
-                padding: 12,
-                borderRadius: 8,
-                marginTop: 12,
-              }}
-            >
-              <Text style={{ color: "#fff", textAlign: "center" }}>
-                Mark Delivered
-              </Text>
-            </TouchableOpacity>
+            {assignedOrder.foodAmount === 0 && (
+              <>
+                <TextInput
+                  placeholder="Enter food amount"
+                  keyboardType="numeric"
+                  value={foodAmountInput}
+                  onChangeText={setFoodAmountInput}
+                  style={{
+                    borderWidth: 1,
+                    marginTop: 10,
+                    padding: 10,
+                    borderRadius: 8,
+                  }}
+                />
+
+                <TouchableOpacity
+                  onPress={setFoodAmount}
+                  style={{
+                    backgroundColor: "#000",
+                    padding: 12,
+                    borderRadius: 8,
+                    marginTop: 10,
+                  }}
+                >
+                  <Text style={{ color: "#fff", textAlign: "center" }}>
+                    Confirm Food Amount
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {assignedOrder.foodAmount > 0 && (
+              <>
+                <Text style={{ marginTop: 10 }}>
+                  Food: ₹{assignedOrder.foodAmount}
+                </Text>
+
+                <Text style={{ fontWeight: "bold", marginTop: 6 }}>
+                  Total: ₹{assignedOrder.totalAmount}
+                </Text>
+
+                <Text style={{ marginTop: 6 }}>
+                  Payment: {assignedOrder.paymentStatus}
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => markDelivered(assignedOrder._id)}
+                  style={{
+                    backgroundColor: "green",
+                    padding: 12,
+                    borderRadius: 8,
+                    marginTop: 12,
+                  }}
+                >
+                  <Text style={{ color: "#fff", textAlign: "center" }}>
+                    Mark Delivered
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </>
       )}
-
-      {/* ================= PENDING ORDERS ================= */}
 
       {!assignedOrder && isAvailable && orders.length > 0 && (
         <>
@@ -294,21 +349,13 @@ export default function HomeScreen() {
           </Text>
 
           {orders.map((order) => (
-            <View
-              key={order._id}
-              style={{
-                borderWidth: 1,
-                borderRadius: 10,
-                padding: 12,
-                marginTop: 12,
-              }}
-            >
+            <View key={order._id} style={{ borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 12 }}>
               <Text>
                 <Text style={{ fontWeight: "bold" }}>Hostel:</Text>{" "}
                 {order.user?.hostelBlock}
               </Text>
 
-              <Text>💵 Fee: ₹{order.deliveryFee || 30}</Text>
+              <Text>💵 Fee: ₹{order.deliveryFee}</Text>
 
               <TouchableOpacity
                 onPress={() => acceptOrder(order._id)}

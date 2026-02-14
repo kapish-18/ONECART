@@ -9,6 +9,7 @@ import deliveryRoutes from "./routes/delivery.routes.js";
 import systemRoutes from "./routes/system.routes.js";
 import adminAnalyticsRoutes from "./routes/admin.analytics.routes.js"; // ✅ FIX
 import adminUserRoutes from "./routes/admin.users.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use("/auth", authRoutes);
 app.use("/admin/users", adminUserRoutes);
 app.use("/orders", orderRoutes);
 app.use("/delivery", deliveryRoutes);
+app.use("/payment", paymentRoutes);
 app.use("/system", systemRoutes);
 app.use("/admin/analytics", adminAnalyticsRoutes); // ✅ THIS WAS THE MISSING PIECE
 

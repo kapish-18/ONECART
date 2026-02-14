@@ -171,6 +171,32 @@ router.post("/accept", async (req, res) => {
   }
 });
 
+/* ================= SET FOOD AMOUNT ================= */
+router.post("/set-food-amount", async (req, res) => {
+  try {
+    const { orderId, amount } = req.body;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.status !== "ASSIGNED") {
+      return res.status(400).json({ error: "Order not assigned" });
+    }
+
+    order.foodAmount = amount;
+    order.totalAmount = amount + order.deliveryFee;
+
+    await order.save();
+
+    res.json({ success: true, totalAmount: order.totalAmount });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to set food amount" });
+  }
+});
+
 /* ================= MARK DELIVERED ================= */
 router.post("/deliver", async (req, res) => {
   try {
@@ -179,6 +205,13 @@ router.post("/deliver", async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
+    }
+
+    // 🔒 DO NOT ALLOW DELIVERY WITHOUT PAYMENT
+    if (order.paymentStatus !== "PAID") {
+      return res.status(400).json({
+        error: "Payment not completed",
+      });
     }
 
     order.status = "DELIVERED";
