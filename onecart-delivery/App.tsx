@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-
 import AppNavigator from "./src/navigation/AppNavigator";
+import { registerForPushNotifications } from "./src/utils/notifications";
 
-/* 🔔 Allow notifications to show when app is OPEN */
+/* Allow notifications in foreground */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -15,21 +15,19 @@ Notifications.setNotificationHandler({
 
 export default function App() {
   useEffect(() => {
-    setupAndroidChannel();
+    init();
   }, []);
 
-  const setupAndroidChannel = async () => {
+  const init = async () => {
     if (Platform.OS === "android") {
       await Notifications.setNotificationChannelAsync("default", {
         name: "default",
         importance: Notifications.AndroidImportance.MAX,
         sound: "default",
-        vibrationPattern: [0, 250, 250, 250],
-        enableVibrate: true,
-        lockscreenVisibility:
-          Notifications.AndroidNotificationVisibility.PUBLIC,
       });
     }
+
+    await registerForPushNotifications();
   };
 
   return <AppNavigator />;

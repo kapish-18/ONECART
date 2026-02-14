@@ -1,15 +1,17 @@
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-const BASE_URL = "https://xochitl-regional-enzymatically.ngrok-free.dev"; 
+
+const BASE_URL = "https://xochitl-regional-enzymatically.ngrok-free.dev";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<any>();
+
   const sendOtp = async () => {
-    if (!email.endsWith("@vitstudent.ac.in")) {
-      Alert.alert("Error", "Please use your VIT email");
+    if (!email) {
+      Alert.alert("Error", "Please enter your email");
       return;
     }
 
@@ -21,7 +23,10 @@ export default function LoginScreen() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          role: "user", // 👈 important
+        }),
       });
 
       const data = await response.json();
@@ -33,11 +38,10 @@ export default function LoginScreen() {
 
       Alert.alert("Success", "OTP sent to your email", [
         {
-            text: "OK",
-            onPress: () => navigation.navigate("Otp", { email }),
+          text: "OK",
+          onPress: () => navigation.navigate("Otp", { email }),
         },
-        ]);
-
+      ]);
     } catch (error) {
       Alert.alert("Error", "Network error");
     } finally {
@@ -52,11 +56,11 @@ export default function LoginScreen() {
       </Text>
 
       <Text style={{ fontSize: 16, marginBottom: 20 }}>
-        Login with your VIT email
+        Login with your email
       </Text>
 
       <TextInput
-        placeholder="example@vitstudent.ac.in"
+        placeholder="Enter email"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"

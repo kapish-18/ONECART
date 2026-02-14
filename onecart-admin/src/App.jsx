@@ -7,6 +7,7 @@ export default function App() {
   const [acceptingOrders, setAcceptingOrders] = useState(null);
   const [loadingSystem, setLoadingSystem] = useState(true);
   const [analytics, setAnalytics] = useState(null);
+  const [pendingDelivery, setPendingDelivery] = useState([]);
 
   /* ================= FETCHERS ================= */
 
@@ -29,15 +30,23 @@ export default function App() {
     setAnalytics(data);
   };
 
+  const fetchPendingDelivery = async () => {
+    const res = await fetch(`${BASE_URL}/admin/users/pending-delivery`);
+    const data = await res.json();
+    setPendingDelivery(data);
+  };
+
   useEffect(() => {
     fetchOrders();
     fetchSystemStatus();
     fetchAnalytics();
+    fetchPendingDelivery();
 
     const interval = setInterval(() => {
       fetchOrders();
       fetchSystemStatus();
       fetchAnalytics();
+      fetchPendingDelivery();
     }, 5000);
 
     return () => clearInterval(interval);
@@ -67,13 +76,23 @@ export default function App() {
     fetchAnalytics();
   };
 
+  const approveDelivery = async (email) => {
+    await fetch(`${BASE_URL}/admin/users/approve-delivery`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    fetchPendingDelivery();
+  };
+
   /* ================= GROUPING ================= */
 
   const newOrders = orders.filter(o => o.status === "CREATED");
   const ongoingOrders = orders.filter(o => o.status === "ASSIGNED");
   const completedOrders = orders.filter(o => o.status === "DELIVERED");
 
-  /* ================= RENDER CARD ================= */
+  /* ================= ORDER CARD ================= */
 
   const renderOrderCard = (order) => (
     <div
@@ -141,12 +160,36 @@ export default function App() {
             padding: 16,
           }}
         >
-          <b>Total Orders:</b> {analytics.totalOrders}
-          <b>Delivered:</b> {analytics.deliveredOrders}
-          <b>Active Delivery Partners:</b> {analytics.activeDeliveryPartners}
-          <b>Total Earnings:</b> ₹{analytics.totalEarnings}
-          <b>Avg Delivery Time:</b> {analytics.avgDeliveryTimeMinutes} min
+          <div><b>Total Orders:</b> {analytics.totalOrders}</div>
+          <div><b>Delivered:</b> {analytics.deliveredOrders}</div>
+          <div><b>Active Delivery Partners:</b> {analytics.activeDeliveryPartners}</div>
+          <div><b>Total Earnings:</b> ₹{analytics.totalEarnings}</div>
+          <div><b>Avg Delivery Time:</b> {analytics.avgDeliveryTimeMinutes} min</div>
         </div>
+      )}
+
+      {/* ================= DELIVERY APPROVALS ================= */}
+      <h2>🛂 Pending Delivery Approvals ({pendingDelivery.length})</h2>
+
+      {pendingDelivery.length === 0 ? (
+        <p>No pending approvals</p>
+      ) : (
+        pendingDelivery.map(user => (
+          <div
+            key={user._id}
+            style={{
+              border: "1px solid #ccc",
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 12,
+            }}
+          >
+            <p><b>Email:</b> {user.email}</p>
+            <button onClick={() => approveDelivery(user.email)}>
+              Approve
+            </button>
+          </div>
+        ))
       )}
 
       {/* ================= SYSTEM TOGGLE ================= */}

@@ -18,6 +18,7 @@ export default function HomeScreen() {
   const isFocused = useIsFocused();
 
   const [loading, setLoading] = useState(true);
+  const [isApproved, setIsApproved] = useState(true);
   const [isAvailable, setIsAvailable] = useState(false);
   const [assignedOrder, setAssignedOrder] = useState<any | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
@@ -32,12 +33,17 @@ export default function HomeScreen() {
   }, []);
 
   const init = async () => {
-    await Promise.all([
-      loadStatus(),
-      loadAssignedOrder(),
-      loadTodayEarnings(),
-    ]);
-    setLoading(false);
+    try {
+      await Promise.all([
+        loadStatus(),
+        loadAssignedOrder(),
+        loadTodayEarnings(),
+      ]);
+    } catch (err) {
+      console.log("Init error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* ================= POLLING ================= */
@@ -47,7 +53,7 @@ export default function HomeScreen() {
       pollingRef.current = null;
     }
 
-    if (!isFocused || !isAvailable || assignedOrder) return;
+    if (!isFocused || !isAvailable || assignedOrder || !isApproved) return;
 
     fetchOrders(true);
 
@@ -58,39 +64,59 @@ export default function HomeScreen() {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [isFocused, isAvailable, assignedOrder]);
+  }, [isFocused, isAvailable, assignedOrder, isApproved]);
 
   /* ================= LOADERS ================= */
+
   const loadStatus = async () => {
     const user = await getUser();
+
     const res = await fetch(
       `${BASE_URL}/delivery/me?email=${encodeURIComponent(user.email)}`
     );
+
+    if (res.status === 403) {
+      setIsApproved(false);
+      return;
+    }
+
     const data = await res.json();
+    setIsApproved(true);
     setIsAvailable(!!data.isAvailable);
   };
 
   const loadAssignedOrder = async () => {
     const user = await getUser();
+
     const res = await fetch(
       `${BASE_URL}/delivery/my-order?email=${encodeURIComponent(user.email)}`
     );
+
+    if (!res.ok) return;
+
     const data = await res.json();
     setAssignedOrder(data || null);
   };
 
   const loadTodayEarnings = async () => {
     const user = await getUser();
+
     const res = await fetch(
       `${BASE_URL}/delivery/earnings?email=${encodeURIComponent(user.email)}`
     );
+
+    if (!res.ok) return;
+
     const data = await res.json();
     setTodayEarnings(data.todayEarnings || 0);
   };
 
   /* ================= ORDERS ================= */
+
   const fetchOrders = async (initial = false) => {
     const res = await fetch(`${BASE_URL}/delivery/orders`);
+    if (!res.ok) return;
+
     const data = await res.json();
 
     if (!initial && data.length > lastOrderCountRef.current) {
@@ -103,8 +129,9 @@ export default function HomeScreen() {
   };
 
   /* ================= AVAILABILITY ================= */
+
   const toggleAvailability = async () => {
-    if (assignedOrder) return; // safety
+    if (assignedOrder) return;
 
     const user = await getUser();
     const newValue = !isAvailable;
@@ -123,6 +150,7 @@ export default function HomeScreen() {
   };
 
   /* ================= ACTIONS ================= */
+
   const acceptOrder = async (orderId: string) => {
     const user = await getUser();
 
@@ -164,6 +192,7 @@ export default function HomeScreen() {
   };
 
   /* ================= LOADING ================= */
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -172,54 +201,38 @@ export default function HomeScreen() {
     );
   }
 
+  /* ================= NOT APPROVED ================= */
+
+  if (!isApproved) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
+        <Text style={{ fontSize: 18, textAlign: "center" }}>
+          ⏳ Waiting for admin approval
+        </Text>
+        <Text style={{ marginTop: 10, textAlign: "center", color: "#666" }}>
+          You will be able to deliver orders once approved.
+        </Text>
+      </View>
+    );
+  }
+
   /* ================= UI ================= */
+
   return (
     <ScrollView contentContainerStyle={{ padding: 24 }}>
       <Text style={{ fontSize: 22, fontWeight: "600" }}>
         Delivery Dashboard
       </Text>
 
-      {/* Earnings */}
-      <TouchableOpacity
-        onPress={() => navigation.navigate("Earnings")}
-        style={{
-          marginTop: 12,
-          marginBottom: 12,
-          paddingVertical: 12,
-          borderRadius: 10,
-          borderWidth: 1,
-          borderColor: "#000",
-          alignItems: "center",
-        }}
-      >
-        <Text>View Earnings</Text>
-      </TouchableOpacity>
-
-      {/* Delivery History */}
-      <TouchableOpacity
-        onPress={() => navigation.navigate("DeliveryHistory")}
-        style={{
-          marginBottom: 16,
-          paddingVertical: 12,
-          borderRadius: 10,
-          borderWidth: 1,
-          borderColor: "#000",
-          alignItems: "center",
-        }}
-      >
-        <Text>Delivery History</Text>
-      </TouchableOpacity>
-
-      <Text style={{ fontSize: 16, marginBottom: 12 }}>
+      <Text style={{ fontSize: 16, marginTop: 12 }}>
         💰 Today’s Earnings: ₹{todayEarnings}
       </Text>
 
-      {/* Availability */}
       <View
         style={{
           flexDirection: "row",
           justifyContent: "space-between",
-          marginBottom: 16,
+          marginVertical: 16,
         }}
       >
         <Text>{isAvailable ? "AVAILABLE" : "NOT AVAILABLE"}</Text>
@@ -231,6 +244,7 @@ export default function HomeScreen() {
       </View>
 
       {/* ================= ASSIGNED ORDER ================= */}
+
       {assignedOrder && (
         <>
           <Text style={{ fontSize: 18, marginTop: 12 }}>
@@ -272,6 +286,7 @@ export default function HomeScreen() {
       )}
 
       {/* ================= PENDING ORDERS ================= */}
+
       {!assignedOrder && isAvailable && orders.length > 0 && (
         <>
           <Text style={{ fontSize: 18, marginTop: 20 }}>

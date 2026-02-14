@@ -1,18 +1,47 @@
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { useState } from "react";
 import { BASE_URL } from "../config/api";
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const sendOtp = async () => {
-    await fetch(`${BASE_URL}/auth/send-otp`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
+    if (!email) {
+      Alert.alert("Error", "Enter delivery email");
+      return;
+    }
 
-    navigation.navigate("Otp", { email });
+    try {
+      setLoading(true);
+
+      const response = await fetch(`${BASE_URL}/auth/send-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          role: "delivery", // 👈 important
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        Alert.alert("Error", data.error || "Failed to send OTP");
+        return;
+      }
+
+      Alert.alert("OTP Sent", "Check your email", [
+        {
+          text: "OK",
+          onPress: () => navigation.navigate("Otp", { email }),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert("Error", "Network error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,9 +51,11 @@ export default function LoginScreen({ navigation }: any) {
       </Text>
 
       <TextInput
-        placeholder="Delivery email"
+        placeholder="Enter delivery email"
         value={email}
         onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
         style={{
           borderWidth: 1,
           borderRadius: 10,
@@ -35,14 +66,17 @@ export default function LoginScreen({ navigation }: any) {
 
       <TouchableOpacity
         onPress={sendOtp}
+        disabled={loading}
         style={{
-          backgroundColor: "#000",
+          backgroundColor: loading ? "#666" : "#000",
           padding: 14,
           borderRadius: 10,
           alignItems: "center",
         }}
       >
-        <Text style={{ color: "#fff" }}>Send OTP</Text>
+        <Text style={{ color: "#fff" }}>
+          {loading ? "Sending..." : "Send OTP"}
+        </Text>
       </TouchableOpacity>
     </View>
   );

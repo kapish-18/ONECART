@@ -9,9 +9,17 @@ router.get("/me", async (req, res) => {
   try {
     const { email } = req.query;
 
-    const user = await User.findOne({ email, role: "delivery" });
+    const user = await User.findOne({
+      email,
+      role: "delivery",
+    });
+
     if (!user) {
       return res.status(404).json({ error: "Delivery user not found" });
+    }
+
+    if (!user.isApproved) {
+      return res.status(403).json({ error: "Not approved" });
     }
 
     res.json(user);
@@ -20,7 +28,35 @@ router.get("/me", async (req, res) => {
   }
 });
 
-/* ================= GET CURRENT ASSIGNED ORDER ================= */
+/* ================= SAVE PUSH TOKEN ================= */
+router.post("/push-token", async (req, res) => {
+  try {
+    const { email, pushToken } = req.body;
+
+    if (!pushToken) {
+      return res.status(400).json({ error: "Push token required" });
+    }
+
+    const user = await User.findOneAndUpdate(
+      { email, role: "delivery" },
+      { pushToken },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "Delivery user not found" });
+    }
+
+    console.log("🔔 Push token saved for:", email);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Push token save error:", err);
+    res.status(500).json({ error: "Failed to save push token" });
+  }
+});
+
+/* ================= GET ASSIGNED ORDER ================= */
 router.get("/my-order", async (req, res) => {
   try {
     const { email } = req.query;
@@ -32,7 +68,7 @@ router.get("/my-order", async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ error: "Delivery user not found" });
+      return res.status(403).json({ error: "Not approved" });
     }
 
     const order = await Order.findOne({
@@ -60,7 +96,7 @@ router.patch("/availability", async (req, res) => {
     );
 
     if (!user) {
-      return res.status(404).json({ error: "Delivery user not approved" });
+      return res.status(403).json({ error: "Not approved" });
     }
 
     res.json({ isAvailable: user.isAvailable });
@@ -69,7 +105,7 @@ router.patch("/availability", async (req, res) => {
   }
 });
 
-/* ================= GET AVAILABLE ORDERS ================= */
+/* ================= AVAILABLE ORDERS ================= */
 router.get("/orders", async (req, res) => {
   try {
     const orders = await Order.find({
@@ -80,8 +116,7 @@ router.get("/orders", async (req, res) => {
       .sort({ createdAt: 1 });
 
     res.json(orders);
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(500).json({ error: "Failed to fetch orders" });
   }
 });
@@ -99,8 +134,8 @@ router.post("/accept", async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({
-        error: "Delivery person not approved or not available",
+      return res.status(403).json({
+        error: "Not approved or not available",
       });
     }
 
@@ -111,7 +146,7 @@ router.post("/accept", async (req, res) => {
 
     if (activeOrder) {
       return res.status(400).json({
-        error: "You already have an active order",
+        error: "Already have active order",
       });
     }
 
@@ -131,8 +166,7 @@ router.post("/accept", async (req, res) => {
     }
 
     res.json({ message: "Order accepted", order });
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(500).json({ error: "Failed to accept order" });
   }
 });
@@ -154,6 +188,37 @@ router.post("/deliver", async (req, res) => {
     res.json({ message: "Order delivered" });
   } catch {
     res.status(500).json({ error: "Failed to mark delivered" });
+  }
+});
+
+/* ================= DELIVERY EARNINGS ================= */
+router.get("/earnings", async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    const user = await User.findOne({ email, role: "delivery" });
+    if (!user) {
+      return res.status(404).json({ error: "Delivery user not found" });
+    }
+
+    const orders = await Order.find({
+      deliveryPerson: user._id,
+      status: "DELIVERED",
+    });
+
+    const today = new Date().toDateString();
+
+    const todayEarnings = orders
+      .filter(
+        (o) =>
+          o.deliveredAt &&
+          new Date(o.deliveredAt).toDateString() === today
+      )
+      .reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
+
+    res.json({ todayEarnings });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch earnings" });
   }
 });
 

@@ -3,11 +3,12 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema(
   {
     /* ================= BASIC INFO ================= */
+
     name: {
       type: String,
       trim: true,
       required: function () {
-        return this?.role === "user";
+        return this.role === "user";
       },
     },
 
@@ -22,8 +23,9 @@ const userSchema = new mongoose.Schema(
     hostelBlock: {
       type: String,
       required: function () {
-        return this?.role === "user";
+        return this.role === "user";
       },
+      default: null,
     },
 
     role: {
@@ -32,16 +34,18 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
 
-    /* ================= AUTH (OTP) ================= */
-    otp: {
-      type: String,
+    /* ================= OTP ================= */
+
+    otp: String,
+    otpExpiry: Date,
+
+    /* ================= DELIVERY FIELDS ================= */
+
+    isApproved: {
+      type: Boolean,
+      default: false,
     },
 
-    otpExpiry: {
-      type: Date,
-    },
-
-    /* ================= DELIVERY USER ================= */
     isAvailable: {
       type: Boolean,
       default: false,
@@ -56,21 +60,10 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
-    // 🔐 NEW FIELD (for delivery approval later)
-    isApproved: {
-      type: Boolean,
-      default: function () {
-        return this?.role === "delivery" ? false : true;
-      },
-    },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-/* ================= INDEXES ================= */
 userSchema.index({ role: 1, isAvailable: 1 });
 
 const User = mongoose.model("User", userSchema);

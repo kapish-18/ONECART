@@ -3,7 +3,7 @@ import User from "../models/User.model.js";
 
 const router = express.Router();
 
-/* ===== GET UNAPPROVED DELIVERY USERS ===== */
+/* ===== GET PENDING DELIVERY USERS ===== */
 router.get("/pending-delivery", async (req, res) => {
   const users = await User.find({
     role: "delivery",
