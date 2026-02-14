@@ -28,6 +28,7 @@ export default function HomeScreen() {
 
   const lastOrderCountRef = useRef(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const assignedPollingRef = useRef<NodeJS.Timeout | null>(null);
 
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function HomeScreen() {
     }
   };
 
-  /* ================= POLLING ================= */
+  /* ================= POLLING FOR NEW ORDERS ================= */
   useEffect(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
@@ -67,6 +68,27 @@ export default function HomeScreen() {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [isFocused, isAvailable, assignedOrder, isApproved]);
+
+  /* ================= AUTO REFRESH ASSIGNED ORDER ================= */
+  useEffect(() => {
+    if (assignedPollingRef.current) {
+      clearInterval(assignedPollingRef.current);
+      assignedPollingRef.current = null;
+    }
+
+    if (!isFocused || !assignedOrder) return;
+
+    assignedPollingRef.current = setInterval(async () => {
+      await loadAssignedOrder();
+      await loadTodayEarnings();
+    }, 5000);
+
+    return () => {
+      if (assignedPollingRef.current) {
+        clearInterval(assignedPollingRef.current);
+      }
+    };
+  }, [isFocused, assignedOrder]);
 
   /* ================= LOADERS ================= */
 
@@ -94,7 +116,10 @@ export default function HomeScreen() {
       `${BASE_URL}/delivery/my-order?email=${encodeURIComponent(user.email)}`
     );
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      setAssignedOrder(null);
+      return;
+    }
 
     const data = await res.json();
     setAssignedOrder(data || null);
@@ -175,8 +200,6 @@ export default function HomeScreen() {
     lastOrderCountRef.current = 0;
     await loadAssignedOrder();
   };
-
-  /* ===== SET FOOD AMOUNT ===== */
 
   const setFoodAmount = async () => {
     if (!foodAmountInput) {
