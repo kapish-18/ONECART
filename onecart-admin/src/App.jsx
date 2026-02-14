@@ -5,6 +5,7 @@ const BASE_URL = "http://localhost:5000";
 export default function App() {
   const [orders, setOrders] = useState([]);
   const [acceptingOrders, setAcceptingOrders] = useState(null);
+  const [peakMode, setPeakMode] = useState(false);
   const [loadingSystem, setLoadingSystem] = useState(true);
   const [analytics, setAnalytics] = useState(null);
   const [pendingDelivery, setPendingDelivery] = useState([]);
@@ -20,7 +21,9 @@ export default function App() {
   const fetchSystemStatus = async () => {
     const res = await fetch(`${BASE_URL}/system/status`);
     const data = await res.json();
+
     setAcceptingOrders(data.adminEnabled);
+    setPeakMode(data.peakMode);
     setLoadingSystem(false);
   };
 
@@ -62,6 +65,17 @@ export default function App() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ acceptingOrders: newValue }),
+    });
+  };
+
+  const togglePeakMode = async () => {
+    const newValue = !peakMode;
+    setPeakMode(newValue);
+
+    await fetch(`${BASE_URL}/system`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ peakMode: newValue }),
     });
   };
 
@@ -168,6 +182,41 @@ export default function App() {
         </div>
       )}
 
+      {/* ================= SYSTEM TOGGLES ================= */}
+      <div
+        style={{
+          marginBottom: 32,
+          padding: 16,
+          border: "1px solid #ccc",
+          borderRadius: 8,
+          maxWidth: 400,
+        }}
+      >
+        <p>
+          <b>Accepting Orders:</b>{" "}
+          <span style={{ color: acceptingOrders ? "green" : "red" }}>
+            {acceptingOrders ? "ON" : "OFF"}
+          </span>
+        </p>
+
+        <button onClick={toggleAcceptingOrders}>
+          Turn {acceptingOrders ? "OFF" : "ON"}
+        </button>
+
+        <hr style={{ margin: "16px 0" }} />
+
+        <p>
+          <b>Peak Mode:</b>{" "}
+          <span style={{ color: peakMode ? "orange" : "gray" }}>
+            {peakMode ? "ON (+₹10)" : "OFF"}
+          </span>
+        </p>
+
+        <button onClick={togglePeakMode}>
+          Turn {peakMode ? "OFF" : "ON"}
+        </button>
+      </div>
+
       {/* ================= DELIVERY APPROVALS ================= */}
       <h2>🛂 Pending Delivery Approvals ({pendingDelivery.length})</h2>
 
@@ -192,37 +241,6 @@ export default function App() {
         ))
       )}
 
-      {/* ================= SYSTEM TOGGLE ================= */}
-      <div
-        style={{
-          marginBottom: 32,
-          padding: 16,
-          border: "1px solid #ccc",
-          borderRadius: 8,
-          maxWidth: 400,
-        }}
-      >
-        <p>
-          <b>Accepting Orders:</b>{" "}
-          {loadingSystem ? (
-            "Loading..."
-          ) : (
-            <span
-              style={{
-                color: acceptingOrders ? "green" : "red",
-                fontWeight: "bold",
-              }}
-            >
-              {acceptingOrders ? "ON" : "OFF"}
-            </span>
-          )}
-        </p>
-
-        <button onClick={toggleAcceptingOrders} disabled={loadingSystem}>
-          Turn {acceptingOrders ? "OFF" : "ON"}
-        </button>
-      </div>
-
       {/* ================= NEW ORDERS ================= */}
       <h2>🆕 New Orders ({newOrders.length})</h2>
       {newOrders.length === 0
@@ -240,7 +258,6 @@ export default function App() {
       {completedOrders.length === 0
         ? <p>No completed orders</p>
         : completedOrders.map(renderOrderCard)}
-
     </div>
   );
 }

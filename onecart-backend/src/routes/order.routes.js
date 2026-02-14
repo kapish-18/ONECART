@@ -7,70 +7,74 @@ import { sendPushNotification } from "../utils/sendPush.js";
 const router = express.Router();
 
 /* ======================================================
-   CREATE ORDER (USER)
-   POST /orders
+   HELPER: CALCULATE DELIVERY FEE
 ====================================================== */
-router.post("/", async (req, res) => {
-  try {
-    const { userEmail, outlets } = req.body;
+function calculateDeliveryFee(outlets, peakMode = false) {
+  const outletCount = outlets.length;
+  let totalItems = 0;
 
-    if (!userEmail || !outlets || outlets.length === 0) {
-      return res.status(400).json({ error: "Invalid order data" });
+  for (const o of outlets) {
+    if (!o.items) continue;
+
+    const lines = o.items.split("\n");
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      const match = trimmed.match(/x(\d+)/i);
+
+      if (match) {
+        totalItems += parseInt(match[1], 10);
+      } else {
+        totalItems += 1;
+      }
     }
-
-    const config = await SystemConfig.findOne();
-    if (!config || !config.acceptingOrders) {
-      return res.status(403).json({
-        error: "Ordering is currently disabled",
-      });
-    }
-
-    const user = await User.findOne({ email: userEmail });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const order = await Order.create({
-      user: user._id,
-      outlets,
-      hostelBlock: user.hostelBlock,
-      status: "CREATED",
-      deliveryPerson: null,
-      deliveryFee: 30,
-    });
-
-    console.log("🟢 ORDER CREATED:", order._id);
-
-    /* 🔔 PUSH NOTIFICATION */
-    const deliveryUsers = await User.find({
-      role: "delivery",
-      isAvailable: true,
-      pushToken: { $ne: null },
-    });
-
-    console.log("📦 Notifying delivery users:", deliveryUsers.length);
-
-    for (const d of deliveryUsers) {
-      await sendPushNotification(
-        d.pushToken,
-        "🚨 New Order Available",
-        `Pickup from hostel ${user.hostelBlock}`
-      );
-    }
-
-    res.status(201).json({
-      message: "Order placed successfully",
-      orderId: order._id,
-    });
-  } catch (error) {
-    console.error("Create order error:", error);
-    res.status(500).json({ error: "Failed to place order" });
   }
-});
+
+  let deliveryFee;
+
+  /* ================= PRICING TIERS ================= */
+
+  // 🔥 EXTRA LARGE
+  if (totalItems > 5) {
+    deliveryFee = 59;
+  }
+
+  // SMALL
+  else if (
+    (outletCount === 1 && totalItems <= 2) ||
+    (outletCount === 2 && totalItems === 2)
+  ) {
+    deliveryFee = 29;
+  }
+
+  // MEDIUM
+  else if (
+    (outletCount === 1 && totalItems <= 3) ||
+    (outletCount === 2 && totalItems <= 3)
+  ) {
+    deliveryFee = 39;
+  }
+
+  // BIG
+  else {
+    deliveryFee = 49;
+  }
+
+  // 🔥 Peak surcharge
+  if (peakMode) {
+    deliveryFee += 10;
+  }
+
+  return {
+    deliveryFee,
+    totalItems,
+  };
+}
 
 /* ======================================================
-   ADMIN: GET ALL ORDERS (CRITICAL)
-   GET /orders
+   GET ALL ORDERS (ADMIN)
 ====================================================== */
 router.get("/", async (req, res) => {
   try {
@@ -87,42 +91,101 @@ router.get("/", async (req, res) => {
 });
 
 /* ======================================================
-   ADMIN: UPDATE ORDER STATUS
-   PATCH /orders/:orderId/status
+   PREVIEW DELIVERY FEE
 ====================================================== */
-router.patch("/:orderId/status", async (req, res) => {
+router.post("/preview", async (req, res) => {
   try {
-    const { orderId } = req.params;
-    const { status } = req.body;
+    const { outlets } = req.body;
 
-    const allowedStatuses = [
-      "CREATED",
-      "ASSIGNED",
-      "DELIVERED",
-      "CANCELLED",
-    ];
-
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ error: "Invalid status" });
+    if (!outlets || outlets.length === 0) {
+      return res.status(400).json({ error: "Invalid order data" });
     }
 
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
+    const config = await SystemConfig.findOne();
 
-    order.status = status;
+    const { deliveryFee, totalItems } = calculateDeliveryFee(
+      outlets,
+      config?.peakMode
+    );
 
-    if (status === "DELIVERED") {
-      order.deliveredAt = new Date();
-    }
-
-    await order.save();
-
-    res.json({ success: true });
+    res.json({
+      deliveryFee,
+      totalItems,
+      peakMode: !!config?.peakMode,
+    });
   } catch (err) {
-    console.error("Update status error:", err);
-    res.status(500).json({ error: "Failed to update status" });
+    console.error("Preview fee error:", err);
+    res.status(500).json({ error: "Failed to preview delivery fee" });
+  }
+});
+
+/* ======================================================
+   CREATE ORDER
+====================================================== */
+router.post("/", async (req, res) => {
+  try {
+    const { userEmail, outlets } = req.body;
+
+    if (!userEmail || !outlets || outlets.length === 0) {
+      return res.status(400).json({ error: "Invalid order data" });
+    }
+
+    const config = await SystemConfig.findOne();
+
+    if (!config || !config.acceptingOrders) {
+      return res.status(403).json({
+        error: "Ordering is currently disabled",
+      });
+    }
+
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const { deliveryFee } = calculateDeliveryFee(
+      outlets,
+      config?.peakMode
+    );
+
+    const order = await Order.create({
+      user: user._id,
+      outlets,
+      hostelBlock: user.hostelBlock,
+      status: "CREATED",
+      deliveryPerson: null,
+      deliveryFee,
+    });
+
+    console.log("🟢 ORDER CREATED:", order._id);
+
+    /* ================= PUSH ================= */
+
+    const deliveryUsers = await User.find({
+      role: "delivery",
+      isAvailable: true,
+      pushToken: { $ne: null },
+    });
+
+    console.log("📦 Notifying delivery users:", deliveryUsers.length);
+
+    for (const deliveryUser of deliveryUsers) {
+      await sendPushNotification(
+        deliveryUser.pushToken,
+        "🚨 New Order Available",
+        `Pickup from hostel ${user.hostelBlock}`
+      );
+    }
+
+    res.status(201).json({
+      message: "Order placed successfully",
+      orderId: order._id,
+      deliveryFee,
+    });
+
+  } catch (error) {
+    console.error("Create order error:", error);
+    res.status(500).json({ error: "Failed to place order" });
   }
 });
 

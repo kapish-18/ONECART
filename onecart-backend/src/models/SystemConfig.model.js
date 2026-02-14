@@ -6,6 +6,12 @@ const systemConfigSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    // ✅ NEW
+    peakMode: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
