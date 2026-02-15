@@ -197,6 +197,49 @@ router.post("/set-food-amount", async (req, res) => {
   }
 });
 
+/* ================= DELIVERY CANCEL (FIXED SAFE VERSION) ================= */
+router.post("/cancel-assigned", async (req, res) => {
+  try {
+    const { orderId, deliveryEmail } = req.body;
+
+    const user = await User.findOne({
+      email: deliveryEmail,
+      role: "delivery",
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "Delivery user not found" });
+    }
+
+    const order = await Order.findOne({
+      _id: orderId,
+      deliveryPerson: user._id,
+      status: "ASSIGNED",
+      paymentStatus: "PENDING",
+    });
+
+    if (!order) {
+      return res.status(400).json({
+        error: "Cannot cancel this order",
+      });
+    }
+
+    await Order.findByIdAndUpdate(orderId, {
+      $set: {
+        status: "CREATED",
+        deliveryPerson: null,
+        foodAmount: 0,
+        totalAmount: 0,
+      },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Delivery cancel error:", err);
+    res.status(500).json({ error: "Failed to cancel order" });
+  }
+});
+
 /* ================= MARK DELIVERED ================= */
 router.post("/deliver", async (req, res) => {
   try {
@@ -207,7 +250,6 @@ router.post("/deliver", async (req, res) => {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // 🔒 DO NOT ALLOW DELIVERY WITHOUT PAYMENT
     if (order.paymentStatus !== "PAID") {
       return res.status(400).json({
         error: "Payment not completed",

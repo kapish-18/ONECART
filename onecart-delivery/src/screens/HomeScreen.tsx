@@ -107,7 +107,10 @@ export default function HomeScreen() {
       `${BASE_URL}/delivery/my-order?email=${encodeURIComponent(user.email)}`
     );
 
-    if (!res.ok) return;
+    if (!res.ok) {
+      setAssignedOrder(null);
+      return;
+    }
 
     const data = await res.json();
     setAssignedOrder(data || null);
@@ -204,6 +207,38 @@ export default function HomeScreen() {
     await loadAssignedOrder();
   };
 
+  /* ================= DELIVERY CANCEL ================= */
+
+  const cancelAssignedOrder = async () => {
+    Alert.alert(
+      "Cancel Delivery?",
+      "This will release the order back to available pool.",
+      [
+        { text: "No" },
+        {
+          text: "Yes",
+          onPress: async () => {
+            const user = await getUser();
+
+            await fetch(`${BASE_URL}/delivery/cancel-assigned`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderId: assignedOrder._id,
+                deliveryEmail: user.email,
+              }),
+            });
+
+            setAssignedOrder(null);
+            setFoodAmountInput("");
+
+            await fetchOrders(true);
+          },
+        },
+      ]
+    );
+  };
+
   const markDelivered = async (orderId: string) => {
     if (assignedOrder.paymentStatus !== "PAID") {
       Alert.alert("Payment not completed yet");
@@ -256,7 +291,13 @@ export default function HomeScreen() {
         💰 Today’s Earnings: ₹{todayEarnings}
       </Text>
 
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginVertical: 16 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginVertical: 16,
+        }}
+      >
         <Text>{isAvailable ? "AVAILABLE" : "NOT AVAILABLE"}</Text>
         <Switch
           value={isAvailable}
@@ -273,8 +314,14 @@ export default function HomeScreen() {
             Current Delivery
           </Text>
 
-          <View style={{ borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 12 }}>
-
+          <View
+            style={{
+              borderWidth: 1,
+              borderRadius: 10,
+              padding: 12,
+              marginTop: 12,
+            }}
+          >
             <Text>
               <Text style={{ fontWeight: "bold" }}>Hostel:</Text>{" "}
               {assignedOrder.user?.hostelBlock}
@@ -284,7 +331,6 @@ export default function HomeScreen() {
               Delivery Fee: ₹{assignedOrder.deliveryFee}
             </Text>
 
-            {/* 🔥 SHOW ORDERED ITEMS */}
             <Text style={{ marginTop: 10, fontWeight: "bold" }}>
               Ordered Items:
             </Text>
@@ -297,6 +343,23 @@ export default function HomeScreen() {
                 <Text>{outlet.items}</Text>
               </View>
             ))}
+
+            {/* CANCEL BUTTON ALWAYS AVAILABLE IF UNPAID */}
+            {assignedOrder.paymentStatus === "PENDING" && (
+              <TouchableOpacity
+                onPress={cancelAssignedOrder}
+                style={{
+                  backgroundColor: "#d9534f",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginTop: 12,
+                }}
+              >
+                <Text style={{ color: "#fff", textAlign: "center" }}>
+                  Cancel Delivery
+                </Text>
+              </TouchableOpacity>
+            )}
 
             {assignedOrder.foodAmount === 0 && (
               <>
@@ -373,7 +436,12 @@ export default function HomeScreen() {
           {orders.map((order) => (
             <View
               key={order._id}
-              style={{ borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 12 }}
+              style={{
+                borderWidth: 1,
+                borderRadius: 10,
+                padding: 12,
+                marginTop: 12,
+              }}
             >
               <Text>
                 <Text style={{ fontWeight: "bold" }}>Hostel:</Text>{" "}
