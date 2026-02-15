@@ -4,7 +4,6 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { BASE_URL } from "../config/api";
@@ -14,7 +13,10 @@ import { useNavigation } from "@react-navigation/native";
 export default function MyOrdersScreen() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState(Date.now());
   const navigation = useNavigation<any>();
+
+  /* ================= FETCH ORDERS ================= */
 
   const fetchOrders = async () => {
     try {
@@ -39,43 +41,17 @@ export default function MyOrdersScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  /* ================= CANCEL ORDER ================= */
+  /* ================= LIVE TIMER ================= */
 
-  const cancelOrder = async (orderId: string) => {
-    try {
-      const user = await getUser();
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
 
-      const res = await fetch(
-        `${BASE_URL}/orders/cancel/${orderId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userEmail: user.email }),
-        }
-      );
+    return () => clearInterval(timer);
+  }, []);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        Alert.alert("Cannot Cancel", data.error || "Cancellation failed");
-        return;
-      }
-
-      Alert.alert("Order Cancelled");
-      fetchOrders();
-    } catch (err) {
-      Alert.alert("Error", "Failed to cancel order");
-    }
-  };
-
-  /* ================= STATUS COLOR ================= */
-
-  const statusColor = (status: string) => {
-    if (status === "DELIVERED") return "green";
-    if (status === "ASSIGNED") return "blue";
-    if (status === "CANCELLED") return "red";
-    return "orange";
-  };
+  /* ================= LOADING ================= */
 
   if (loading) {
     return (
@@ -93,94 +69,97 @@ export default function MyOrdersScreen() {
     );
   }
 
+  /* ================= UI ================= */
+
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
       <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 24 }}>
         My Orders
       </Text>
 
-      {orders.map((order) => (
-        <View
-          key={order._id}
-          style={{
-            borderWidth: 1,
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
-          }}
-        >
-          {/* STATUS */}
-          <Text style={{ fontWeight: "bold" }}>
-            Status:{" "}
-            <Text style={{ color: statusColor(order.status) }}>
-              {order.status}
-            </Text>
-          </Text>
+      {orders.map((order) => {
+        const createdTime = new Date(order.createdAt).getTime();
+        const timeLeftMs = 5 * 60 * 1000 - (now - createdTime);
+        const secondsLeft = Math.max(Math.floor(timeLeftMs / 1000), 0);
 
-          <Text style={{ marginTop: 6 }}>
-            Delivery Fee: ₹{order.deliveryFee}
-          </Text>
+        const minutes = Math.floor(secondsLeft / 60);
+        const seconds = secondsLeft % 60;
 
-          {order.foodAmount > 0 && (
-            <>
-              <Text>Food Amount: ₹{order.foodAmount}</Text>
-              <Text style={{ fontWeight: "bold" }}>
-                Total: ₹{order.totalAmount}
-              </Text>
-            </>
-          )}
+        return (
+          <View
+            key={order._id}
+            style={{
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 16,
+            }}
+          >
+            <Text>Status: {order.status}</Text>
 
-          {/* ================= PAYMENT BUTTON ================= */}
+            <Text>Delivery Fee: ₹{order.deliveryFee}</Text>
 
-          {order.status === "ASSIGNED" &&
-            order.totalAmount > 0 &&
-            order.paymentStatus === "PENDING" && (
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate("Payment", {
-                    orderId: order._id,
-                  })
-                }
-                style={{
-                  backgroundColor: "green",
-                  padding: 12,
-                  borderRadius: 8,
-                  marginTop: 12,
-                }}
-              >
-                <Text style={{ color: "#fff", textAlign: "center" }}>
-                  Pay ₹{order.totalAmount}
+            {/* 🔥 SHOW TIMER ONLY FOR CREATED */}
+            {order.status === "CREATED" && secondsLeft > 0 && (
+              <>
+                <Text style={{ marginTop: 8, color: "orange" }}>
+                  ⏳ Order will auto-cancel in {minutes}m {seconds}s
                 </Text>
-              </TouchableOpacity>
+                <Text style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+                  If no delivery partner accepts within 5 minutes,
+                  your order will be cancelled automatically.
+                </Text>
+              </>
             )}
 
-          {order.paymentStatus === "PAID" && (
-            <Text style={{ color: "green", marginTop: 10 }}>
-              ✅ Payment Completed
-            </Text>
-          )}
-
-          {/* ================= CANCEL BUTTON ================= */}
-
-          {(order.status === "CREATED" ||
-            (order.status === "ASSIGNED" &&
-              order.paymentStatus === "PENDING")) && (
-            <TouchableOpacity
-              onPress={() => cancelOrder(order._id)}
-              style={{
-                backgroundColor: "red",
-                padding: 12,
-                borderRadius: 8,
-                marginTop: 12,
-              }}
-            >
-              <Text style={{ color: "#fff", textAlign: "center" }}>
-                Cancel Order
+            {order.status === "CANCELLED" && (
+              <Text style={{ marginTop: 8, color: "red" }}>
+                ❌ Order auto-cancelled (no delivery partner accepted)
               </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ))}
+            )}
+
+            {order.foodAmount > 0 && (
+              <>
+                <Text style={{ marginTop: 8 }}>
+                  Food Amount: ₹{order.foodAmount}
+                </Text>
+                <Text style={{ fontWeight: "bold" }}>
+                  Total: ₹{order.totalAmount}
+                </Text>
+              </>
+            )}
+
+            {/* PAYMENT BUTTON */}
+            {order.status === "ASSIGNED" &&
+              order.totalAmount > 0 &&
+              order.paymentStatus === "PENDING" && (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate("Payment", {
+                      orderId: order._id,
+                    })
+                  }
+                  style={{
+                    backgroundColor: "green",
+                    padding: 12,
+                    borderRadius: 8,
+                    marginTop: 12,
+                  }}
+                >
+                  <Text style={{ color: "#fff", textAlign: "center" }}>
+                    Pay ₹{order.totalAmount}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+            {order.paymentStatus === "PAID" && (
+              <Text style={{ color: "green", marginTop: 10 }}>
+                ✅ Payment Completed
+              </Text>
+            )}
+          </View>
+        );
+      })}
     </ScrollView>
   );
 }

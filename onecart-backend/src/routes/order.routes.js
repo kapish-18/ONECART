@@ -7,10 +7,27 @@ import { sendPushNotification } from "../utils/sendPush.js";
 const router = express.Router();
 
 /* ======================================================
+   🔥 AUTO CANCEL ORDERS OLDER THAN 5 MINUTES
+====================================================== */
+async function autoCancelOldOrders() {
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+  await Order.updateMany(
+    {
+      status: "CREATED",
+      createdAt: { $lt: fiveMinutesAgo },
+    },
+    { status: "CANCELLED" }
+  );
+}
+
+/* ======================================================
    GET ALL ORDERS (ADMIN PANEL)
 ====================================================== */
 router.get("/", async (req, res) => {
   try {
+    await autoCancelOldOrders(); // 🔥 auto cleanup
+
     const orders = await Order.find()
       .populate("user", "email hostelBlock")
       .populate("deliveryPerson", "email")
@@ -28,6 +45,8 @@ router.get("/", async (req, res) => {
 ====================================================== */
 router.get("/user/:email", async (req, res) => {
   try {
+    await autoCancelOldOrders(); // 🔥 auto cleanup
+
     const { email } = req.params;
 
     const user = await User.findOne({ email });
@@ -156,56 +175,6 @@ router.post("/", async (req, res) => {
   } catch (error) {
     console.error("Create order error:", error);
     res.status(500).json({ error: "Failed to place order" });
-  }
-});
-
-/* ======================================================
-   CANCEL ORDER (SAFE SIMPLE FLOW)
-====================================================== */
-router.patch("/cancel/:orderId", async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const { userEmail } = req.body;
-
-    const user = await User.findOne({ email: userEmail });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const order = await Order.findById(orderId);
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    // Must belong to user
-    if (order.user.toString() !== user._id.toString()) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
-
-    // Cannot cancel if delivered
-    if (order.status === "DELIVERED") {
-      return res.status(400).json({ error: "Order already delivered" });
-    }
-
-    // Cannot cancel if paid
-    if (order.paymentStatus === "PAID") {
-      return res.status(400).json({
-        error: "Payment completed. Cannot cancel.",
-      });
-    }
-
-    order.status = "CANCELLED";
-    order.deliveryPerson = null;
-
-    await order.save();
-
-    console.log("❌ ORDER CANCELLED:", order._id);
-
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error("Cancel order error:", err);
-    res.status(500).json({ error: "Failed to cancel order" });
   }
 });
 
