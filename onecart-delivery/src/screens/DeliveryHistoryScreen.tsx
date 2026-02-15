@@ -12,14 +12,21 @@ export default function DeliveryHistoryScreen() {
   }, []);
 
   const loadHistory = async () => {
-    const user = await getUser();
-    const res = await fetch(
-      `${BASE_URL}/delivery/earnings?email=${encodeURIComponent(user.email)}`
-    );
-    const data = await res.json();
+    try {
+      const user = await getUser();
 
-    setOrders(data.orders || []);
-    setLoading(false);
+      const res = await fetch(
+        `${BASE_URL}/delivery/earnings?email=${encodeURIComponent(user.email)}`
+      );
+
+      const data = await res.json();
+
+      setOrders(data.orders || []);
+    } catch (err) {
+      console.log("History load error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -54,11 +61,22 @@ export default function DeliveryHistoryScreen() {
             {order.hostelBlock}
           </Text>
 
-          <Text>💵 Fee: ₹{order.deliveryFee}</Text>
+          <Text>Delivery Fee: ₹{order.deliveryFee}</Text>
 
-          <Text>
+          {order.foodAmount > 0 && (
+            <>
+              <Text>Food Amount: ₹{order.foodAmount}</Text>
+              <Text style={{ fontWeight: "bold" }}>
+                Total: ₹{order.totalAmount}
+              </Text>
+            </>
+          )}
+
+          <Text style={{ marginTop: 6 }}>
             🕒 Delivered at:{" "}
-            {new Date(order.deliveredAt).toLocaleString()}
+            {order.deliveredAt
+              ? new Date(order.deliveredAt).toLocaleString()
+              : "-"}
           </Text>
 
           <Text style={{ marginTop: 6, color: "green" }}>

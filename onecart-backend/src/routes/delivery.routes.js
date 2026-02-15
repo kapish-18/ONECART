@@ -47,11 +47,8 @@ router.post("/push-token", async (req, res) => {
       return res.status(404).json({ error: "Delivery user not found" });
     }
 
-    console.log("🔔 Push token saved for:", email);
-
     res.json({ success: true });
   } catch (err) {
-    console.error("Push token save error:", err);
     res.status(500).json({ error: "Failed to save push token" });
   }
 });
@@ -191,13 +188,12 @@ router.post("/set-food-amount", async (req, res) => {
     await order.save();
 
     res.json({ success: true, totalAmount: order.totalAmount });
-  } catch (err) {
-    console.error(err);
+  } catch {
     res.status(500).json({ error: "Failed to set food amount" });
   }
 });
 
-/* ================= DELIVERY CANCEL (FIXED SAFE VERSION) ================= */
+/* ================= DELIVERY CANCEL ================= */
 router.post("/cancel-assigned", async (req, res) => {
   try {
     const { orderId, deliveryEmail } = req.body;
@@ -211,31 +207,29 @@ router.post("/cancel-assigned", async (req, res) => {
       return res.status(404).json({ error: "Delivery user not found" });
     }
 
-    const order = await Order.findOne({
-      _id: orderId,
-      deliveryPerson: user._id,
-      status: "ASSIGNED",
-      paymentStatus: "PENDING",
-    });
-
+    const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(400).json({
-        error: "Cannot cancel this order",
-      });
+      return res.status(404).json({ error: "Order not found" });
     }
 
-    await Order.findByIdAndUpdate(orderId, {
-      $set: {
-        status: "CREATED",
-        deliveryPerson: null,
-        foodAmount: 0,
-        totalAmount: 0,
-      },
-    });
+    if (
+      order.status !== "ASSIGNED" ||
+      order.paymentStatus !== "PENDING" ||
+      order.deliveryPerson?.toString() !== user._id.toString()
+    ) {
+      return res.status(400).json({ error: "Cannot cancel this order" });
+    }
+
+    order.status = "CREATED";
+    order.deliveryPerson = null;
+    order.foodAmount = 0;
+    order.totalAmount = 0;
+    order.paymentStatus = "PENDING";
+
+    await order.save();
 
     res.json({ success: true });
-  } catch (err) {
-    console.error("Delivery cancel error:", err);
+  } catch {
     res.status(500).json({ error: "Failed to cancel order" });
   }
 });
@@ -251,9 +245,7 @@ router.post("/deliver", async (req, res) => {
     }
 
     if (order.paymentStatus !== "PAID") {
-      return res.status(400).json({
-        error: "Payment not completed",
-      });
+      return res.status(400).json({ error: "Payment not completed" });
     }
 
     order.status = "DELIVERED";
@@ -266,7 +258,7 @@ router.post("/deliver", async (req, res) => {
   }
 });
 
-/* ================= DELIVERY EARNINGS ================= */
+/* ================= DELIVERY EARNINGS + HISTORY ================= */
 router.get("/earnings", async (req, res) => {
   try {
     const { email } = req.query;
@@ -279,7 +271,7 @@ router.get("/earnings", async (req, res) => {
     const orders = await Order.find({
       deliveryPerson: user._id,
       status: "DELIVERED",
-    });
+    }).sort({ deliveredAt: -1 });
 
     const today = new Date().toDateString();
 
@@ -291,7 +283,7 @@ router.get("/earnings", async (req, res) => {
       )
       .reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
 
-    res.json({ todayEarnings });
+    res.json({ todayEarnings, orders });
   } catch {
     res.status(500).json({ error: "Failed to fetch earnings" });
   }

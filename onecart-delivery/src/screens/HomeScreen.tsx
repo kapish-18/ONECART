@@ -12,9 +12,10 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { BASE_URL } from "../config/api";
 import { getUser } from "../utils/auth";
-import { useIsFocused } from "@react-navigation/native";
+import { useIsFocused, useNavigation } from "@react-navigation/native";
 
 export default function HomeScreen() {
+  const navigation = useNavigation<any>();
   const isFocused = useIsFocused();
 
   const [loading, setLoading] = useState(true);
@@ -207,8 +208,6 @@ export default function HomeScreen() {
     await loadAssignedOrder();
   };
 
-  /* ================= DELIVERY CANCEL ================= */
-
   const cancelAssignedOrder = async () => {
     Alert.alert(
       "Cancel Delivery?",
@@ -291,6 +290,20 @@ export default function HomeScreen() {
         💰 Today’s Earnings: ₹{todayEarnings}
       </Text>
 
+      <TouchableOpacity
+        onPress={() => navigation.navigate("DeliveryHistory")}
+        style={{
+          backgroundColor: "#007bff",
+          padding: 10,
+          borderRadius: 8,
+          marginTop: 10,
+        }}
+      >
+        <Text style={{ color: "#fff", textAlign: "center" }}>
+          View Delivery History
+        </Text>
+      </TouchableOpacity>
+
       <View
         style={{
           flexDirection: "row",
@@ -306,7 +319,7 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* ================= ASSIGNED ORDER ================= */}
+      {/* ASSIGNED ORDER */}
 
       {assignedOrder && (
         <>
@@ -344,7 +357,6 @@ export default function HomeScreen() {
               </View>
             ))}
 
-            {/* CANCEL BUTTON ALWAYS AVAILABLE IF UNPAID */}
             {assignedOrder.paymentStatus === "PENDING" && (
               <TouchableOpacity
                 onPress={cancelAssignedOrder}
@@ -425,7 +437,7 @@ export default function HomeScreen() {
         </>
       )}
 
-      {/* ================= PENDING ORDERS ================= */}
+      {/* PENDING ORDERS */}
 
       {!assignedOrder && isAvailable && orders.length > 0 && (
         <>
