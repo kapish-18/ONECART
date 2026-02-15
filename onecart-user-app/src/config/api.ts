@@ -1,1 +1,1 @@
-export const BASE_URL = "https://xochitl-regional-enzymatically.ngrok-free.dev";
+export const BASE_URL = "https://onecart-s238.onrender.com";

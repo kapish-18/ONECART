@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = "https://onecart-s238.onrender.com";
 
 export default function App() {
   const [orders, setOrders] = useState([]);
