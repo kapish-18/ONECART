@@ -23,14 +23,13 @@ export default function HomeScreen() {
   const [assignedOrder, setAssignedOrder] = useState<any | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [todayEarnings, setTodayEarnings] = useState(0);
-
   const [foodAmountInput, setFoodAmountInput] = useState("");
 
   const lastOrderCountRef = useRef(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
-  const assignedPollingRef = useRef<NodeJS.Timeout | null>(null);
 
   /* ================= INITIAL LOAD ================= */
+
   useEffect(() => {
     init();
   }, []);
@@ -49,7 +48,20 @@ export default function HomeScreen() {
     }
   };
 
-  /* ================= POLLING FOR NEW ORDERS ================= */
+  /* ================= AUTO REFRESH ASSIGNED ORDER ================= */
+
+  useEffect(() => {
+    if (!isFocused || !assignedOrder) return;
+
+    const interval = setInterval(() => {
+      loadAssignedOrder();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isFocused, assignedOrder]);
+
+  /* ================= POLLING AVAILABLE ORDERS ================= */
+
   useEffect(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
@@ -68,27 +80,6 @@ export default function HomeScreen() {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [isFocused, isAvailable, assignedOrder, isApproved]);
-
-  /* ================= AUTO REFRESH ASSIGNED ORDER ================= */
-  useEffect(() => {
-    if (assignedPollingRef.current) {
-      clearInterval(assignedPollingRef.current);
-      assignedPollingRef.current = null;
-    }
-
-    if (!isFocused || !assignedOrder) return;
-
-    assignedPollingRef.current = setInterval(async () => {
-      await loadAssignedOrder();
-      await loadTodayEarnings();
-    }, 5000);
-
-    return () => {
-      if (assignedPollingRef.current) {
-        clearInterval(assignedPollingRef.current);
-      }
-    };
-  }, [isFocused, assignedOrder]);
 
   /* ================= LOADERS ================= */
 
@@ -116,10 +107,7 @@ export default function HomeScreen() {
       `${BASE_URL}/delivery/my-order?email=${encodeURIComponent(user.email)}`
     );
 
-    if (!res.ok) {
-      setAssignedOrder(null);
-      return;
-    }
+    if (!res.ok) return;
 
     const data = await res.json();
     setAssignedOrder(data || null);
@@ -138,8 +126,6 @@ export default function HomeScreen() {
     setTodayEarnings(data.todayEarnings || 0);
   };
 
-  /* ================= ORDERS ================= */
-
   const fetchOrders = async (initial = false) => {
     const res = await fetch(`${BASE_URL}/delivery/orders`);
     if (!res.ok) return;
@@ -155,7 +141,7 @@ export default function HomeScreen() {
     setOrders(data);
   };
 
-  /* ================= AVAILABILITY ================= */
+  /* ================= ACTIONS ================= */
 
   const toggleAvailability = async () => {
     if (assignedOrder) return;
@@ -175,8 +161,6 @@ export default function HomeScreen() {
       lastOrderCountRef.current = 0;
     }
   };
-
-  /* ================= ACTIONS ================= */
 
   const acceptOrder = async (orderId: string) => {
     const user = await getUser();
@@ -244,7 +228,7 @@ export default function HomeScreen() {
     ]);
   };
 
-  /* ================= LOADING ================= */
+  /* ================= UI ================= */
 
   if (loading) {
     return (
@@ -256,15 +240,11 @@ export default function HomeScreen() {
 
   if (!isApproved) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
-        <Text style={{ fontSize: 18, textAlign: "center" }}>
-          ⏳ Waiting for admin approval
-        </Text>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>⏳ Waiting for admin approval</Text>
       </View>
     );
   }
-
-  /* ================= UI ================= */
 
   return (
     <ScrollView contentContainerStyle={{ padding: 24 }}>
@@ -272,7 +252,7 @@ export default function HomeScreen() {
         Delivery Dashboard
       </Text>
 
-      <Text style={{ fontSize: 16, marginTop: 12 }}>
+      <Text style={{ marginTop: 10 }}>
         💰 Today’s Earnings: ₹{todayEarnings}
       </Text>
 
@@ -285,6 +265,8 @@ export default function HomeScreen() {
         />
       </View>
 
+      {/* ================= ASSIGNED ORDER ================= */}
+
       {assignedOrder && (
         <>
           <Text style={{ fontSize: 18, marginTop: 12 }}>
@@ -292,6 +274,7 @@ export default function HomeScreen() {
           </Text>
 
           <View style={{ borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 12 }}>
+
             <Text>
               <Text style={{ fontWeight: "bold" }}>Hostel:</Text>{" "}
               {assignedOrder.user?.hostelBlock}
@@ -300,6 +283,20 @@ export default function HomeScreen() {
             <Text style={{ marginTop: 6 }}>
               Delivery Fee: ₹{assignedOrder.deliveryFee}
             </Text>
+
+            {/* 🔥 SHOW ORDERED ITEMS */}
+            <Text style={{ marginTop: 10, fontWeight: "bold" }}>
+              Ordered Items:
+            </Text>
+
+            {assignedOrder.outlets?.map((outlet: any, index: number) => (
+              <View key={index} style={{ marginTop: 6 }}>
+                <Text style={{ fontWeight: "600" }}>
+                  {outlet.outletName}
+                </Text>
+                <Text>{outlet.items}</Text>
+              </View>
+            ))}
 
             {assignedOrder.foodAmount === 0 && (
               <>
@@ -310,7 +307,7 @@ export default function HomeScreen() {
                   onChangeText={setFoodAmountInput}
                   style={{
                     borderWidth: 1,
-                    marginTop: 10,
+                    marginTop: 12,
                     padding: 10,
                     borderRadius: 8,
                   }}
@@ -365,6 +362,8 @@ export default function HomeScreen() {
         </>
       )}
 
+      {/* ================= PENDING ORDERS ================= */}
+
       {!assignedOrder && isAvailable && orders.length > 0 && (
         <>
           <Text style={{ fontSize: 18, marginTop: 20 }}>
@@ -372,13 +371,29 @@ export default function HomeScreen() {
           </Text>
 
           {orders.map((order) => (
-            <View key={order._id} style={{ borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 12 }}>
+            <View
+              key={order._id}
+              style={{ borderWidth: 1, borderRadius: 10, padding: 12, marginTop: 12 }}
+            >
               <Text>
                 <Text style={{ fontWeight: "bold" }}>Hostel:</Text>{" "}
                 {order.user?.hostelBlock}
               </Text>
 
               <Text>💵 Fee: ₹{order.deliveryFee}</Text>
+
+              <Text style={{ marginTop: 6, fontWeight: "bold" }}>
+                Ordered Items:
+              </Text>
+
+              {order.outlets?.map((outlet: any, index: number) => (
+                <View key={index} style={{ marginTop: 4 }}>
+                  <Text style={{ fontWeight: "600" }}>
+                    {outlet.outletName}
+                  </Text>
+                  <Text>{outlet.items}</Text>
+                </View>
+              ))}
 
               <TouchableOpacity
                 onPress={() => acceptOrder(order._id)}
@@ -396,12 +411,6 @@ export default function HomeScreen() {
             </View>
           ))}
         </>
-      )}
-
-      {!assignedOrder && isAvailable && orders.length === 0 && (
-        <Text style={{ marginTop: 20, color: "#666" }}>
-          No orders right now
-        </Text>
       )}
     </ScrollView>
   );

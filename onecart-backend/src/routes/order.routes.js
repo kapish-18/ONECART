@@ -22,11 +22,55 @@ async function autoCancelOldOrders() {
 }
 
 /* ======================================================
+   CANCEL ORDER (USER SAFE CANCEL)
+====================================================== */
+router.patch("/:orderId/cancel", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // ❌ Do NOT allow cancel if already paid
+    if (order.paymentStatus === "PAID") {
+      return res.status(400).json({
+        error: "Cannot cancel after payment",
+      });
+    }
+
+    // ✅ Allow cancel if:
+    // - CREATED
+    // - ASSIGNED but unpaid
+    if (
+      order.status === "CREATED" ||
+      (order.status === "ASSIGNED" &&
+        order.paymentStatus === "PENDING")
+    ) {
+      order.status = "CANCELLED";
+      await order.save();
+
+      return res.json({ success: true });
+    }
+
+    return res.status(400).json({
+      error: "Order cannot be cancelled",
+    });
+
+  } catch (err) {
+    console.error("Cancel order error:", err);
+    res.status(500).json({ error: "Failed to cancel order" });
+  }
+});
+
+/* ======================================================
    GET ALL ORDERS (ADMIN PANEL)
 ====================================================== */
 router.get("/", async (req, res) => {
   try {
-    await autoCancelOldOrders(); // 🔥 auto cleanup
+    await autoCancelOldOrders();
 
     const orders = await Order.find()
       .populate("user", "email hostelBlock")
@@ -45,7 +89,7 @@ router.get("/", async (req, res) => {
 ====================================================== */
 router.get("/user/:email", async (req, res) => {
   try {
-    await autoCancelOldOrders(); // 🔥 auto cleanup
+    await autoCancelOldOrders();
 
     const { email } = req.params;
 
@@ -133,8 +177,6 @@ router.post("/", async (req, res) => {
       deliveryFee += 10;
     }
 
-    /* ================= CREATE ORDER ================= */
-
     const order = await Order.create({
       user: user._id,
       outlets,
@@ -146,11 +188,6 @@ router.post("/", async (req, res) => {
       totalAmount: 0,
       paymentStatus: "PENDING",
     });
-
-    console.log("🟢 ORDER CREATED:", order._id);
-    console.log("💰 DELIVERY FEE SAVED:", deliveryFee);
-
-    /* ================= PUSH NOTIFICATION ================= */
 
     const deliveryUsers = await User.find({
       role: "delivery",
