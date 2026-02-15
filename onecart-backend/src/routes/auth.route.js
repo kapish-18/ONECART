@@ -5,6 +5,14 @@ import { sendOtpEmail } from "../utils/sendEmail.js";
 const router = express.Router();
 
 /* ======================================================
+   HELPER: VIT EMAIL VALIDATION
+====================================================== */
+function isValidVitEmail(email) {
+  return typeof email === "string" &&
+    email.toLowerCase().endsWith("@vitstudent.ac.in");
+}
+
+/* ======================================================
    SEND OTP
    POST /auth/send-otp
 ====================================================== */
@@ -20,6 +28,13 @@ router.post("/send-otp", async (req, res) => {
       return res.status(400).json({ error: "Invalid role" });
     }
 
+    /* 🔒 VIT EMAIL RESTRICTION */
+    if (!isValidVitEmail(email)) {
+      return res.status(400).json({
+        error: "Only @vitstudent.ac.in emails are allowed",
+      });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     const user = await User.findOneAndUpdate(
@@ -33,7 +48,7 @@ router.post("/send-otp", async (req, res) => {
       {
         upsert: true,
         new: true,
-        runValidators: false, // VERY IMPORTANT
+        runValidators: false, // important for OTP flow
       }
     );
 
@@ -41,7 +56,7 @@ router.post("/send-otp", async (req, res) => {
 
     res.json({ message: "OTP sent successfully" });
   } catch (error) {
-    console.error(error);
+    console.error("Send OTP error:", error);
     res.status(500).json({ error: "Failed to send OTP" });
   }
 });
@@ -53,6 +68,13 @@ router.post("/send-otp", async (req, res) => {
 router.post("/verify-otp", async (req, res) => {
   try {
     const { email, otp, name, hostelBlock } = req.body;
+
+    /* 🔒 Extra safety: re-check email domain */
+    if (!isValidVitEmail(email)) {
+      return res.status(400).json({
+        error: "Unauthorized email domain",
+      });
+    }
 
     const user = await User.findOne({ email });
 
@@ -84,7 +106,7 @@ router.post("/verify-otp", async (req, res) => {
       user,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Verify OTP error:", error);
     res.status(500).json({ error: "OTP verification failed" });
   }
 });
