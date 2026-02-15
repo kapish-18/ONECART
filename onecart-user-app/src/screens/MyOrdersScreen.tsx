@@ -64,13 +64,29 @@ export default function MyOrdersScreen() {
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  /* ================= CANCEL ORDER ================= */
+  /* ================= FIXED CANCEL ORDER ================= */
 
   const cancelOrder = async (orderId: string) => {
     try {
-      await fetch(`${BASE_URL}/orders/${orderId}/cancel`, {
-        method: "PATCH",
+      const user = await getUser();
+
+      const res = await fetch(`${BASE_URL}/orders/cancel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId,
+          userEmail: user.email,
+        }),
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        Alert.alert(data.error || "Cancel failed");
+        return;
+      }
 
       fetchOrders();
     } catch (err) {

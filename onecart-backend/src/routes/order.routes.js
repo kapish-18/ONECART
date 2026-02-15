@@ -22,50 +22,6 @@ async function autoCancelOldOrders() {
 }
 
 /* ======================================================
-   CANCEL ORDER (USER SAFE CANCEL)
-====================================================== */
-router.patch("/:orderId/cancel", async (req, res) => {
-  try {
-    const { orderId } = req.params;
-
-    const order = await Order.findById(orderId);
-
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    // ❌ Do NOT allow cancel if already paid
-    if (order.paymentStatus === "PAID") {
-      return res.status(400).json({
-        error: "Cannot cancel after payment",
-      });
-    }
-
-    // ✅ Allow cancel if:
-    // - CREATED
-    // - ASSIGNED but unpaid
-    if (
-      order.status === "CREATED" ||
-      (order.status === "ASSIGNED" &&
-        order.paymentStatus === "PENDING")
-    ) {
-      order.status = "CANCELLED";
-      await order.save();
-
-      return res.json({ success: true });
-    }
-
-    return res.status(400).json({
-      error: "Order cannot be cancelled",
-    });
-
-  } catch (err) {
-    console.error("Cancel order error:", err);
-    res.status(500).json({ error: "Failed to cancel order" });
-  }
-});
-
-/* ======================================================
    GET ALL ORDERS (ADMIN PANEL)
 ====================================================== */
 router.get("/", async (req, res) => {
@@ -110,6 +66,54 @@ router.get("/user/:email", async (req, res) => {
 });
 
 /* ======================================================
+   USER CANCEL ORDER (SAFE)
+====================================================== */
+router.post("/cancel", async (req, res) => {
+  try {
+    const { orderId, userEmail } = req.body;
+
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.user.toString() !== user._id.toString()) {
+      return res.status(403).json({ error: "Not your order" });
+    }
+
+    // Allow cancel only if not delivered
+    if (order.status === "DELIVERED") {
+      return res.status(400).json({ error: "Cannot cancel delivered order" });
+    }
+
+    // If already paid, don't allow auto cancel (manual refund needed)
+    if (order.paymentStatus === "PAID") {
+      return res.status(400).json({
+        error: "Order already paid. Contact support.",
+      });
+    }
+
+    order.status = "CANCELLED";
+    order.deliveryPerson = null;
+    order.foodAmount = 0;
+    order.totalAmount = 0;
+    order.paymentStatus = "PENDING";
+
+    await order.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("User cancel error:", err);
+    res.status(500).json({ error: "Failed to cancel order" });
+  }
+});
+
+/* ======================================================
    CREATE ORDER
 ====================================================== */
 router.post("/", async (req, res) => {
@@ -132,7 +136,17 @@ router.post("/", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    /* ================= DELIVERY FEE LOGIC ================= */
+    const availableDeliveryCount = await User.countDocuments({
+      role: "delivery",
+      isApproved: true,
+      isAvailable: true,
+    });
+
+    if (availableDeliveryCount === 0) {
+      return res.status(400).json({
+        error: "No delivery partners available right now",
+      });
+    }
 
     const outletCount = outlets.length;
     let totalItems = 0;
@@ -157,25 +171,18 @@ router.post("/", async (req, res) => {
 
     let deliveryFee = 29;
 
-    if (totalItems > 5) {
-      deliveryFee = 59;
-    } else if (
+    if (totalItems > 5) deliveryFee = 59;
+    else if (
       (outletCount === 1 && totalItems <= 2) ||
       (outletCount === 2 && totalItems === 2)
-    ) {
-      deliveryFee = 29;
-    } else if (
+    ) deliveryFee = 29;
+    else if (
       (outletCount === 1 && totalItems <= 3) ||
       (outletCount === 2 && totalItems <= 3)
-    ) {
-      deliveryFee = 39;
-    } else {
-      deliveryFee = 49;
-    }
+    ) deliveryFee = 39;
+    else deliveryFee = 49;
 
-    if (config?.peakMode) {
-      deliveryFee += 10;
-    }
+    if (config?.peakMode) deliveryFee += 10;
 
     const order = await Order.create({
       user: user._id,
