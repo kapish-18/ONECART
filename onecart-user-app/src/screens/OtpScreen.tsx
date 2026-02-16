@@ -10,7 +10,7 @@ import { useRoute } from "@react-navigation/native";
 import { saveUser } from "../utils/auth";
 
 const BASE_URL =
-  "https://xochitl-regional-enzymatically.ngrok-free.dev";
+  "https://onecart-s238.onrender.com";
 
 export default function OtpScreen() {
   const route = useRoute<any>();
