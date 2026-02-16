@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js"
   },
   "dependencies": {
+    "@getbrevo/brevo": "^3.0.1",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "expo-server-sdk": "^5.0.0",
