@@ -1,4 +1,4 @@
-import * as brevo from '@getbrevo/brevo';
+import * as brevo from "@getbrevo/brevo";
 
 export async function sendOtpEmail(email, otp) {
   try {
@@ -13,9 +13,16 @@ export async function sendOtpEmail(email, otp) {
     );
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { name: "OneCart", email: "noreply@onecart.com" };
-    sendSmtpEmail.to = [{ email: email }];
+
+    sendSmtpEmail.sender = {
+      name: "OneCart",
+      email: "onecartvit@gmail.com",
+    };
+
+    sendSmtpEmail.to = [{ email }];
+
     sendSmtpEmail.subject = "Your OneCart OTP";
+
     sendSmtpEmail.htmlContent = `
       <div style="font-family: Arial; padding: 20px;">
         <h2>🔐 Your OneCart OTP</h2>
@@ -24,12 +31,14 @@ export async function sendOtpEmail(email, otp) {
       </div>
     `;
 
-    const data = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log("📧 OTP email sent:", data.messageId);
+    const response = await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+    console.log("📧 OTP email sent:", response.messageId);
+
     return true;
 
   } catch (err) {
-    console.error("❌ Email sending failed:", err.message);
+    console.error("❌ Email sending failed:", err.response?.body || err.message);
     throw err;
   }
 }
