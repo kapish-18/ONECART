@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "onecart-delivery",
+  "private_key_id": "6804838011225d197941891dc0559598267d2cf0",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCzxmSsB14Vw7LQ\nrpZiDtvkiNl3kalMVhc8Frj5oNyXSACzoZnlVEcVoQtvsFn4LoQ1VCTjhndozpO1\nqpkOulX224xemE61MYIBGbevxGwmsMepNm/xQ1MHTew/kdt5ZREJPEXUGuhbBKb2\njKoMyQwdktqBfZVa2RYs/s4/kIGAHAWxAfX2mgsl5upQ2EpEEUrGka1XRZN1yQpi\nvJr9TOkmY4cjBihkDV5TfWXIh7WB6Fv1Nh6xnTq2pyNoH3aSwdd+FCNhdVx4AXXk\nujT5x4ncRBOJhWf+PF8HTNc8UznTya/WM3wlqoGpkyDH41hZPLt647ZFXh0GdgbN\nbhhRe5kNAgMBAAECggEAKIBUCmivguY/uSF4KlfQJPTKz5QOqO7FVcmFu2GJCQEU\n/WM1LXQW/rG1RqCbqFzsdqpCFEtlSASwRO+OA4Ip309XmLEmHE6uzAor9qqhNfdC\nSCZGQnvJLx5YUPsOj9Mb6zF7xt0YB3dtGSMYJYC+3MPKu/0bwqehRhpSw4HOFxr4\nJtN6rl/zuLoe8X4H7nSGqRVg/CtqaD8CI4vuFV+x50yioEn6N79rYVeg1NoXcEdU\n5vs82iTiuTqhzFOW0CPmpwp1wMgOAT0pQ55IH6Skfhze+9Nyf981bq21cdFxxE7G\neSVdE/xspLv1KgdMtn78l9IyG3KxcTyz3KjF+3mUkQKBgQDmvbIINo6l063NzVns\n/RAtQeaP31hjHXs6RebDk8nxutT4We7DqQG4bIdKFjpusgbpJxpkOKNNGgg4N8Tj\nXFk4KMHzlui2og4T2EBmhVTIdTW5sOV+hjk2JxVI7Acjw7w8KRAjilWRU5flp21W\nhc+MmO1Kq6YB1i0OvmDzMMbE0QKBgQDHdGv6ZH12+AEjstL3C3/BH5D/Zwpa+TCy\n+EewUSi23ChIc+wjTcwGtStKk3iJI4Rw7DtQRF3q9P5m4PiUSJa87C/AYL1Y0SQF\npGZtKAT7hGDDktIXyId3F5pK8JO8h886Oevus26xa4bzkhcOiv7SSguk3O5s8zCj\nCpjpzuFPfQKBgG41EIGHvV5K2mq/uEHPJRjYrwzsukSs4hyVIoErZ3sDp5DvM3FU\nmbPCcmPadhJFCbP2r05LFwROeLqROIL3qs19+hUkcQY6JMspsKjG6hXMldqZOSPT\nbCQHSs1HnqlgZdm+Ky0ud2wwJw7Thw+aXeVjbYMKtQGPkHnISHofQ/DhAoGAbFOU\n2Zd+dQDZTZQv9DDwn+kPDUffXe19P5aNCPvrSvVjg4ZCOCJmrzXyXzyc+I6rvdDv\nnfajs5qAGUwSdia+h7kXbjqcXAKqt83EO4DCw//vtgilxnkI6euNxynGc1yndg5D\nT49wjTfDQcKUdzeSko/Ypx++9rlWLxbwWfwcbtkCgYBgB9Zmsl+soQi9HYQ8LCmm\nCk796tPA/AbM2pd9qqPkP8Neorj0sd/f1qEFn7KBZlCrkM6EFdJa9s5bHmtYiFxg\nt6Jx1JXTYTUDt4GbgvKutXmKG2+PllawbxSY4j/eMwfMbZy5H2SBAhbaYDLVctEF\npKs4f2XdMAOFQ7xZaw0Hyw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@onecart-delivery.iam.gserviceaccount.com",
+  "client_id": "102269402265524938086",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40onecart-delivery.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
