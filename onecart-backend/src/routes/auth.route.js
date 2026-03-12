@@ -6,11 +6,11 @@ const router = express.Router();
 
 /* ======================================================
    HELPER: VIT EMAIL VALIDATION
-====================================================== */
+====================================================== /
 function isValidVitEmail(email) {
   return typeof email === "string" &&
     email.toLowerCase().endsWith("@vitstudent.ac.in");
-}
+} */
 
 /* ======================================================
    SEND OTP

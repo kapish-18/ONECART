@@ -18,15 +18,12 @@ export default function MyOrdersScreen() {
   const navigation = useNavigation<any>();
 
   /* ================= FETCH ORDERS ================= */
-
   const fetchOrders = async () => {
     try {
       const user = await getUser();
-
       const res = await fetch(
         `${BASE_URL}/orders/user/${encodeURIComponent(user.email)}`
       );
-
       const data = await res.json();
       setOrders(data);
     } catch (err) {
@@ -43,51 +40,34 @@ export default function MyOrdersScreen() {
   }, []);
 
   /* ================= SMOOTH TIMER ================= */
-
   useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
 
   const getRemainingTime = (createdAt: string) => {
     const createdTime = new Date(createdAt).getTime();
     const diff = 5 * 60 * 1000 - (now - createdTime);
-
     if (diff <= 0) return "00:00";
-
     const minutes = Math.floor(diff / 60000);
     const seconds = Math.floor((diff % 60000) / 1000);
-
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  /* ================= FIXED CANCEL ORDER ================= */
-
+  /* ================= CANCEL ORDER ================= */
   const cancelOrder = async (orderId: string) => {
     try {
       const user = await getUser();
-
       const res = await fetch(`${BASE_URL}/orders/cancel`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId,
-          userEmail: user.email,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, userEmail: user.email }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         Alert.alert(data.error || "Cancel failed");
         return;
       }
-
       fetchOrders();
     } catch (err) {
       Alert.alert("Cancel failed");
@@ -95,7 +75,6 @@ export default function MyOrdersScreen() {
   };
 
   /* ================= UI STATES ================= */
-
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -113,7 +92,6 @@ export default function MyOrdersScreen() {
   }
 
   /* ================= RENDER ================= */
-
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24 }}>
       <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 24 }}>
@@ -131,7 +109,6 @@ export default function MyOrdersScreen() {
           }}
         >
           <Text>Status: {order.status}</Text>
-
           <Text>Delivery Fee: ₹{order.deliveryFee}</Text>
 
           {order.foodAmount > 0 && (
@@ -143,16 +120,36 @@ export default function MyOrdersScreen() {
             </>
           )}
 
-          {/* ================= PAYMENT BUTTON ================= */}
+          {/* ================= ARRIVED BANNER ================= */}
+          {order.status === "ARRIVED" && (
+            <View
+              style={{
+                backgroundColor: "#fff3cd",
+                borderRadius: 8,
+                padding: 12,
+                marginTop: 10,
+                borderLeftWidth: 4,
+                borderLeftColor: "#f59e0b",
+              }}
+            >
+              <Text style={{ fontWeight: "bold", color: "#92400e", fontSize: 15 }}>
+                🛵 Delivery partner has arrived!
+              </Text>
+              {order.arrivalNote ? (
+                <Text style={{ color: "#78350f", marginTop: 4 }}>
+                  "{order.arrivalNote}"
+                </Text>
+              ) : null}
+            </View>
+          )}
 
+          {/* ================= PAYMENT BUTTON ================= */}
           {order.status === "ASSIGNED" &&
             order.totalAmount > 0 &&
             order.paymentStatus === "PENDING" && (
               <TouchableOpacity
                 onPress={() =>
-                  navigation.navigate("Payment", {
-                    orderId: order._id,
-                  })
+                  navigation.navigate("Payment", { orderId: order._id })
                 }
                 style={{
                   backgroundColor: "green",
@@ -167,14 +164,13 @@ export default function MyOrdersScreen() {
               </TouchableOpacity>
             )}
 
-          {order.paymentStatus === "PAID" && (
+          {order.paymentStatus === "PAID" && order.status !== "ARRIVED" && (
             <Text style={{ color: "green", marginTop: 10 }}>
               ✅ Payment Completed
             </Text>
           )}
 
           {/* ================= CANCEL LOGIC ================= */}
-
           {(order.status === "CREATED" ||
             (order.status === "ASSIGNED" &&
               order.paymentStatus === "PENDING")) && (
@@ -184,7 +180,6 @@ export default function MyOrdersScreen() {
                   Auto cancelling in: {getRemainingTime(order.createdAt)}
                 </Text>
               )}
-
               <TouchableOpacity
                 onPress={() =>
                   Alert.alert(

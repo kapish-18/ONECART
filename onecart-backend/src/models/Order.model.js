@@ -7,7 +7,6 @@ const orderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-
     outlets: [
       {
         outletId: {
@@ -19,46 +18,42 @@ const orderSchema = new mongoose.Schema(
         items: String,
       },
     ],
-
     hostelBlock: {
       type: String,
       required: true,
     },
-
     status: {
       type: String,
-      enum: ["CREATED", "ASSIGNED", "DELIVERED", "CANCELLED"],
+      enum: ["CREATED", "ASSIGNED", "ARRIVED", "DELIVERED", "CANCELLED"],
       default: "CREATED",
     },
-
     deliveryPerson: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-
     deliveryFee: {
       type: Number,
       default: 30,
     },
-
     /* ================= PAYMENT FIELDS ================= */
-
     foodAmount: {
       type: Number,
       default: 0,
     },
-
     totalAmount: {
       type: Number,
       default: 0,
     },
-
     paymentStatus: {
       type: String,
       enum: ["PENDING", "PAID"],
       default: "PENDING",
     },
-
+    /* ================= ARRIVAL FIELDS ================= */
+    arrivalNote: {
+      type: String,
+      default: null,
+    },
     deliveredAt: {
       type: Date,
     },

@@ -25,23 +25,19 @@ export default function HomeScreen() {
   const [orders, setOrders] = useState<any[]>([]);
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [foodAmountInput, setFoodAmountInput] = useState("");
+  const [arrivalNote, setArrivalNote] = useState("");
 
   const lastOrderCountRef = useRef(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   /* ================= INITIAL LOAD ================= */
-
   useEffect(() => {
     init();
   }, []);
 
   const init = async () => {
     try {
-      await Promise.all([
-        loadStatus(),
-        loadAssignedOrder(),
-        loadTodayEarnings(),
-      ]);
+      await Promise.all([loadStatus(), loadAssignedOrder(), loadTodayEarnings()]);
     } catch (err) {
       console.log("Init error:", err);
     } finally {
@@ -50,52 +46,36 @@ export default function HomeScreen() {
   };
 
   /* ================= AUTO REFRESH ASSIGNED ORDER ================= */
-
   useEffect(() => {
     if (!isFocused || !assignedOrder) return;
-
-    const interval = setInterval(() => {
-      loadAssignedOrder();
-    }, 3000);
-
+    const interval = setInterval(() => loadAssignedOrder(), 3000);
     return () => clearInterval(interval);
   }, [isFocused, assignedOrder]);
 
   /* ================= POLLING AVAILABLE ORDERS ================= */
-
   useEffect(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
-
     if (!isFocused || !isAvailable || assignedOrder || !isApproved) return;
-
     fetchOrders(true);
-
-    pollingRef.current = setInterval(() => {
-      fetchOrders(false);
-    }, 5000);
-
+    pollingRef.current = setInterval(() => fetchOrders(false), 5000);
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [isFocused, isAvailable, assignedOrder, isApproved]);
 
   /* ================= LOADERS ================= */
-
   const loadStatus = async () => {
     const user = await getUser();
-
     const res = await fetch(
       `${BASE_URL}/delivery/me?email=${encodeURIComponent(user.email)}`
     );
-
     if (res.status === 403) {
       setIsApproved(false);
       return;
     }
-
     const data = await res.json();
     setIsApproved(true);
     setIsAvailable(!!data.isAvailable);
@@ -103,29 +83,23 @@ export default function HomeScreen() {
 
   const loadAssignedOrder = async () => {
     const user = await getUser();
-
     const res = await fetch(
       `${BASE_URL}/delivery/my-order?email=${encodeURIComponent(user.email)}`
     );
-
     if (!res.ok) {
       setAssignedOrder(null);
       return;
     }
-
     const data = await res.json();
     setAssignedOrder(data || null);
   };
 
   const loadTodayEarnings = async () => {
     const user = await getUser();
-
     const res = await fetch(
       `${BASE_URL}/delivery/earnings?email=${encodeURIComponent(user.email)}`
     );
-
     if (!res.ok) return;
-
     const data = await res.json();
     setTodayEarnings(data.todayEarnings || 0);
   };
@@ -133,33 +107,26 @@ export default function HomeScreen() {
   const fetchOrders = async (initial = false) => {
     const res = await fetch(`${BASE_URL}/delivery/orders`);
     if (!res.ok) return;
-
     const data = await res.json();
-
     if (!initial && data.length > lastOrderCountRef.current) {
       Alert.alert("🚨 New Order", "A delivery order is available");
       Vibration.vibrate(500);
     }
-
     lastOrderCountRef.current = data.length;
     setOrders(data);
   };
 
   /* ================= ACTIONS ================= */
-
   const toggleAvailability = async () => {
     if (assignedOrder) return;
-
     const user = await getUser();
     const newValue = !isAvailable;
     setIsAvailable(newValue);
-
     await fetch(`${BASE_URL}/delivery/availability`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: user.email, isAvailable: newValue }),
     });
-
     if (!newValue) {
       setOrders([]);
       lastOrderCountRef.current = 0;
@@ -168,21 +135,15 @@ export default function HomeScreen() {
 
   const acceptOrder = async (orderId: string) => {
     const user = await getUser();
-
     const res = await fetch(`${BASE_URL}/delivery/accept`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        orderId,
-        deliveryEmail: user.email,
-      }),
+      body: JSON.stringify({ orderId, deliveryEmail: user.email }),
     });
-
     if (!res.ok) {
       Alert.alert("Error", "Could not accept order");
       return;
     }
-
     Alert.alert("Order Accepted");
     setOrders([]);
     lastOrderCountRef.current = 0;
@@ -194,7 +155,6 @@ export default function HomeScreen() {
       Alert.alert("Enter food amount");
       return;
     }
-
     await fetch(`${BASE_URL}/delivery/set-food-amount`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -203,7 +163,6 @@ export default function HomeScreen() {
         amount: Number(foodAmountInput),
       }),
     });
-
     Alert.alert("Food amount set");
     await loadAssignedOrder();
   };
@@ -211,15 +170,14 @@ export default function HomeScreen() {
   const cancelAssignedOrder = async () => {
     Alert.alert(
       "Cancel Delivery?",
-      "This will release the order back to available pool.",
+      "This will release the order back to the available pool.",
       [
         { text: "No" },
         {
           text: "Yes",
           onPress: async () => {
             const user = await getUser();
-
-            await fetch(`${BASE_URL}/delivery/cancel-assigned`, {
+            const res = await fetch(`${BASE_URL}/delivery/cancel-assigned`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -227,10 +185,13 @@ export default function HomeScreen() {
                 deliveryEmail: user.email,
               }),
             });
-
+            if (!res.ok) {
+              Alert.alert("Error", "Could not cancel order");
+              return;
+            }
             setAssignedOrder(null);
             setFoodAmountInput("");
-
+            setArrivalNote("");
             await fetchOrders(true);
           },
         },
@@ -238,23 +199,51 @@ export default function HomeScreen() {
     );
   };
 
-  const markDelivered = async (orderId: string) => {
-    if (assignedOrder.paymentStatus !== "PAID") {
-      Alert.alert("Payment not completed yet");
+  const markArrived = async (orderId: string) => {
+    if (!arrivalNote.trim()) {
+      Alert.alert(
+        "Add a note",
+        "Please add a short note for the user e.g. 'Waiting at Block C gate'"
+      );
       return;
     }
+    const user = await getUser();
+    const res = await fetch(`${BASE_URL}/delivery/arrived`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId,
+        deliveryEmail: user.email,
+        arrivalNote: arrivalNote.trim(),
+      }),
+    });
+    if (!res.ok) {
+      Alert.alert("Error", "Could not mark as arrived");
+      return;
+    }
+    Alert.alert("✅ Marked as arrived", "The user has been notified");
+    setArrivalNote("");
+    await loadAssignedOrder();
+  };
 
-    await fetch(`${BASE_URL}/delivery/deliver`, {
+  const markDelivered = async (orderId: string) => {
+    if (assignedOrder.status !== "ARRIVED") {
+      Alert.alert("Mark arrived first before delivering");
+      return;
+    }
+    const res = await fetch(`${BASE_URL}/delivery/deliver`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orderId }),
     });
-
+    if (!res.ok) {
+      Alert.alert("Error", "Could not mark as delivered");
+      return;
+    }
     Alert.alert("Order Delivered 🎉");
-
     setAssignedOrder(null);
     setFoodAmountInput("");
-
+    setArrivalNote("");
     await Promise.all([
       loadTodayEarnings(),
       loadAssignedOrder(),
@@ -263,7 +252,6 @@ export default function HomeScreen() {
   };
 
   /* ================= UI ================= */
-
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -282,13 +270,8 @@ export default function HomeScreen() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 24 }}>
-      <Text style={{ fontSize: 22, fontWeight: "600" }}>
-        Delivery Dashboard
-      </Text>
-
-      <Text style={{ marginTop: 10 }}>
-        💰 Today’s Earnings: ₹{todayEarnings}
-      </Text>
+      <Text style={{ fontSize: 22, fontWeight: "600" }}>Delivery Dashboard</Text>
+      <Text style={{ marginTop: 10 }}>💰 Today's Earnings: ₹{todayEarnings}</Text>
 
       <TouchableOpacity
         onPress={() => navigation.navigate("DeliveryHistory")}
@@ -319,14 +302,10 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* ASSIGNED ORDER */}
-
+      {/* ================= ASSIGNED ORDER ================= */}
       {assignedOrder && (
         <>
-          <Text style={{ fontSize: 18, marginTop: 12 }}>
-            Current Delivery
-          </Text>
-
+          <Text style={{ fontSize: 18, marginTop: 12 }}>Current Delivery</Text>
           <View
             style={{
               borderWidth: 1,
@@ -339,24 +318,20 @@ export default function HomeScreen() {
               <Text style={{ fontWeight: "bold" }}>Hostel:</Text>{" "}
               {assignedOrder.user?.hostelBlock}
             </Text>
-
             <Text style={{ marginTop: 6 }}>
               Delivery Fee: ₹{assignedOrder.deliveryFee}
             </Text>
-
             <Text style={{ marginTop: 10, fontWeight: "bold" }}>
               Ordered Items:
             </Text>
-
             {assignedOrder.outlets?.map((outlet: any, index: number) => (
               <View key={index} style={{ marginTop: 6 }}>
-                <Text style={{ fontWeight: "600" }}>
-                  {outlet.outletName}
-                </Text>
+                <Text style={{ fontWeight: "600" }}>{outlet.outletName}</Text>
                 <Text>{outlet.items}</Text>
               </View>
             ))}
 
+            {/* Cancel button — only before payment */}
             {assignedOrder.paymentStatus === "PENDING" && (
               <TouchableOpacity
                 onPress={cancelAssignedOrder}
@@ -373,6 +348,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             )}
 
+            {/* Food amount input — only if not set yet */}
             {assignedOrder.foodAmount === 0 && (
               <>
                 <TextInput
@@ -387,7 +363,6 @@ export default function HomeScreen() {
                     borderRadius: 8,
                   }}
                 />
-
                 <TouchableOpacity
                   onPress={setFoodAmount}
                   style={{
@@ -404,47 +379,105 @@ export default function HomeScreen() {
               </>
             )}
 
+            {/* After food amount is set */}
             {assignedOrder.foodAmount > 0 && (
               <>
                 <Text style={{ marginTop: 10 }}>
                   Food: ₹{assignedOrder.foodAmount}
                 </Text>
-
                 <Text style={{ fontWeight: "bold", marginTop: 6 }}>
                   Total: ₹{assignedOrder.totalAmount}
                 </Text>
-
                 <Text style={{ marginTop: 6 }}>
                   Payment: {assignedOrder.paymentStatus}
                 </Text>
 
-                <TouchableOpacity
-                  onPress={() => markDelivered(assignedOrder._id)}
-                  style={{
-                    backgroundColor: "green",
-                    padding: 12,
-                    borderRadius: 8,
-                    marginTop: 12,
-                  }}
-                >
-                  <Text style={{ color: "#fff", textAlign: "center" }}>
-                    Mark Delivered
-                  </Text>
-                </TouchableOpacity>
+                {/* MARK ARRIVED — only after payment, before arrived */}
+                {assignedOrder.paymentStatus === "PAID" &&
+                  assignedOrder.status === "ASSIGNED" && (
+                    <>
+                      <TextInput
+                        placeholder="Note for user e.g. Waiting at Block C gate"
+                        value={arrivalNote}
+                        onChangeText={setArrivalNote}
+                        multiline
+                        style={{
+                          borderWidth: 1,
+                          borderColor: "#ccc",
+                          borderRadius: 8,
+                          padding: 10,
+                          marginTop: 12,
+                          minHeight: 60,
+                          textAlignVertical: "top",
+                        }}
+                      />
+                      <TouchableOpacity
+                        onPress={() => markArrived(assignedOrder._id)}
+                        style={{
+                          backgroundColor: "#f59e0b",
+                          padding: 12,
+                          borderRadius: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "#fff",
+                            textAlign: "center",
+                            fontWeight: "600",
+                          }}
+                        >
+                          🛵 Mark Arrived
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                {/* ARRIVED STATE — show confirmation + deliver button */}
+                {assignedOrder.status === "ARRIVED" && (
+                  <>
+                    <View
+                      style={{
+                        backgroundColor: "#d1fae5",
+                        borderRadius: 8,
+                        padding: 10,
+                        marginTop: 12,
+                      }}
+                    >
+                      <Text style={{ color: "#065f46", fontWeight: "600" }}>
+                        ✅ Marked as arrived
+                      </Text>
+                      {assignedOrder.arrivalNote ? (
+                        <Text style={{ color: "#065f46", marginTop: 4 }}>
+                          Note sent: {assignedOrder.arrivalNote}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => markDelivered(assignedOrder._id)}
+                      style={{
+                        backgroundColor: "green",
+                        padding: 12,
+                        borderRadius: 8,
+                        marginTop: 12,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", textAlign: "center" }}>
+                        Mark Delivered
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </>
             )}
           </View>
         </>
       )}
 
-      {/* PENDING ORDERS */}
-
+      {/* ================= PENDING ORDERS ================= */}
       {!assignedOrder && isAvailable && orders.length > 0 && (
         <>
-          <Text style={{ fontSize: 18, marginTop: 20 }}>
-            Pending Orders
-          </Text>
-
+          <Text style={{ fontSize: 18, marginTop: 20 }}>Pending Orders</Text>
           {orders.map((order) => (
             <View
               key={order._id}
@@ -459,22 +492,16 @@ export default function HomeScreen() {
                 <Text style={{ fontWeight: "bold" }}>Hostel:</Text>{" "}
                 {order.user?.hostelBlock}
               </Text>
-
               <Text>💵 Fee: ₹{order.deliveryFee}</Text>
-
               <Text style={{ marginTop: 6, fontWeight: "bold" }}>
                 Ordered Items:
               </Text>
-
               {order.outlets?.map((outlet: any, index: number) => (
                 <View key={index} style={{ marginTop: 4 }}>
-                  <Text style={{ fontWeight: "600" }}>
-                    {outlet.outletName}
-                  </Text>
+                  <Text style={{ fontWeight: "600" }}>{outlet.outletName}</Text>
                   <Text>{outlet.items}</Text>
                 </View>
               ))}
-
               <TouchableOpacity
                 onPress={() => acceptOrder(order._id)}
                 style={{
