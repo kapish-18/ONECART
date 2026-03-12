@@ -5,12 +5,13 @@ import { sendOtpEmail } from "../utils/sendEmail.js";
 const router = express.Router();
 
 /* ======================================================
-   HELPER: VIT EMAIL VALIDATION
-====================================================== /
+   HELPER: VIT EMAIL VALIDATION — TEMP DISABLED FOR TESTING
+====================================================== */
 function isValidVitEmail(email) {
-  return typeof email === "string" &&
-    email.toLowerCase().endsWith("@vitstudent.ac.in");
-} */
+  return true;
+  // return typeof email === "string" &&
+  //   email.toLowerCase().endsWith("@vitstudent.ac.in");
+}
 
 /* ======================================================
    SEND OTP
