@@ -60,6 +60,18 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    // ✅ NEW: UPI QR code image URL for payout tracking
+    qrCode: {
+      type: String,
+      default: null,
+    },
+
+    // ✅ NEW: Timestamp of last payout — payout query only counts orders after this
+    lastPaidAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
