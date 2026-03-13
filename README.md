@@ -20,7 +20,7 @@
 
 ## The Problem
 
-traditional food apps make you place **separate orders for separate outlets** — meaning separate payments, separate waits, separate tracking. If you want food from a pizza place *and* the biryani dhaba, you're doing it twice.
+Traditional food apps make you place **separate orders for separate outlets** — meaning separate payments, separate waits, separate tracking. If you want food from a pizza place *and* the biryani dhaba, you're doing it twice.
 
 **OneCart collapses that into one flow.** Pick from multiple outlets, pay once, track one order, one delivery partner brings everything.
 
@@ -59,9 +59,9 @@ No app talks to another app directly. Every piece of data lives in MongoDB. The 
 
 ### Admin Panel
 
-| Dashboard | Orders | Analytics |
-|-----------|--------|-----------|
-| ![Dashboard](screenshots/admin-dashboard.png) | ![Orders](screenshots/admin-orders.png) | ![Analytics](screenshots/admin-analytics.png) |
+| Dashboard | Orders | Analytics | Payouts |
+|-----------|--------|-----------|---------|
+| ![Dashboard](screenshots/admin-dashboard.png) | ![Orders](screenshots/admin-orders.png) | ![Analytics](screenshots/admin-analytics.png) | ![Payouts](screenshots/admin-payouts.png) |
 
 ---
 
@@ -160,6 +160,7 @@ CREATED → ASSIGNED → ARRIVED → DELIVERED
 - Enable peak mode (adds ₹10 to delivery fee)
 - View all live orders
 - Analytics: orders per day, delivery performance, revenue summary
+- **Payout tracker**: per-partner breakdown of food fronted, delivery fees earned, and net amount owed — with per-partner QR codes for easy UPI payment and a one-tap "Mark Paid" to reset outstanding balances
 
 ---
 
@@ -180,7 +181,8 @@ Peak mode adds ₹10 to all tiers. Toggled from the admin panel.
 **User** — polymorphic, single collection for all roles
 ```js
 { name, email, hostelBlock, role: "user"|"delivery"|"admin",
-  otp, otpExpiry, isApproved, isAvailable, pushToken, totalEarnings }
+  otp, otpExpiry, isApproved, isAvailable, pushToken,
+  totalEarnings, qrCode, lastPaidAt }
 ```
 
 **Order**
@@ -287,7 +289,6 @@ VITE_ADMIN_HASH=   # SHA-256 of admin password
 - [ ] JWT-based authentication with session expiry
 - [ ] Expand to 3+ outlets
 - [ ] In-app chat between user and delivery partner
-- [ ] Delivery partner earnings dashboard
 - [ ] EAS Build for production APK distribution
 
 ---
