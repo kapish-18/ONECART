@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="onecart-final-logo.png" alt="OneCart Logo" width="100" height="100" style="border-radius: 20px"/>
+<img src="onecart-final-logo.png" alt="OneCart Logo" width="200" height="200" style="border-radius: 20px"/>
 
 # OneCart
 
