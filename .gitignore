@@ -148,3 +148,5 @@ google-services-info.plist
 **/android/build/
 **/android/.gradle/
 **/android/app/build/
+
+**/credentials.json
