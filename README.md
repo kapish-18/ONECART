@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="https://via.placeholder.com/120x120/E6F4FE/1a73e8?text=🛒" alt="OneCart Logo" width="100" height="100" style="border-radius: 20px"/>
+<img src="onecart-final-logo.png" alt="OneCart Logo" width="100" height="100" style="border-radius: 20px"/>
 
 # OneCart
 
-### Multi-outlet campus food delivery — order from two canteens in one checkout.
+### Multi-outlet campus food delivery — order from two outlets in one checkout.
 
 [![Made with React Native](https://img.shields.io/badge/React%20Native-Expo-20232A?style=flat&logo=react)](https://expo.dev)
 [![Backend](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=flat&logo=node.js)](https://nodejs.org)
