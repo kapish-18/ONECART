@@ -20,7 +20,7 @@
 
 ## The Problem
 
-Campus food apps at VIT make you place **separate orders for separate outlets** — meaning separate payments, separate waits, separate tracking. If you want food from Juice Corner *and* the main canteen, you're doing it twice.
+traditional food apps make you place **separate orders for separate outlets** — meaning separate payments, separate waits, separate tracking. If you want food from a pizza place *and* the biryani dhaba, you're doing it twice.
 
 **OneCart collapses that into one flow.** Pick from multiple outlets, pay once, track one order, one delivery partner brings everything.
 
