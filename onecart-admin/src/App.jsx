@@ -87,6 +87,272 @@ function LoginGate({ onSuccess }) {
   );
 }
 
+/* ================= PAYOUT SECTION ================= */
+
+function PayoutsSection({ baseUrl }) {
+  const [period, setPeriod] = useState("week");
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // QR editing state: { email, value, saving }
+  const [editingQr, setEditingQr] = useState(null);
+
+  const fetchPayouts = async (p) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${baseUrl}/admin/payouts?period=${p}`);
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      console.error("Failed to fetch payouts", err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchPayouts(period);
+  }, [period]);
+
+  const saveQr = async (email) => {
+    if (!editingQr) return;
+    setEditingQr((prev) => ({ ...prev, saving: true }));
+    await fetch(`${baseUrl}/admin/payouts/qr`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, qrCode: editingQr.value }),
+    });
+    setEditingQr(null);
+    fetchPayouts(period);
+  };
+
+  return (
+    <div style={{ marginBottom: 40 }}>
+      <h2 style={{ marginBottom: 8 }}>💸 Payouts</h2>
+
+      {/* Period selector */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {["today", "week", "month", "all"].map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 6,
+              border: "1px solid #d1d5db",
+              cursor: "pointer",
+              fontWeight: period === p ? 700 : 400,
+              backgroundColor: period === p ? "#111827" : "#f9fafb",
+              color: period === p ? "#fff" : "#374151",
+            }}
+          >
+            {p === "today" ? "Today" : p === "week" ? "Last 7 days" : p === "month" ? "Last 30 days" : "All time"}
+          </button>
+        ))}
+      </div>
+
+      {loading && <p style={{ color: "#6b7280" }}>Loading...</p>}
+
+      {/* Summary banner */}
+      {data && !loading && (
+        <div
+          style={{
+            display: "flex",
+            gap: 24,
+            flexWrap: "wrap",
+            padding: "14px 20px",
+            backgroundColor: "#fef9c3",
+            border: "1px solid #fde68a",
+            borderRadius: 8,
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <span style={{ color: "#6b7280", fontSize: 13 }}>Total you owe</span>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#b45309" }}>
+              ₹{data.summary.totalOwed}
+            </div>
+          </div>
+          <div>
+            <span style={{ color: "#6b7280", fontSize: 13 }}>Orders in period</span>
+            <div style={{ fontSize: 22, fontWeight: 700 }}>{data.summary.totalOrders}</div>
+          </div>
+          <div>
+            <span style={{ color: "#6b7280", fontSize: 13 }}>Your revenue (₹9 × orders)</span>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "#15803d" }}>
+              ₹{data.summary.yourRevenue}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Per-partner cards */}
+      {data && !loading && data.partners.length === 0 && (
+        <p style={{ color: "#6b7280" }}>No delivered orders in this period.</p>
+      )}
+
+      {data &&
+        !loading &&
+        data.partners.map((partner) => (
+          <div
+            key={partner.email}
+            style={{
+              ...styles.card,
+              display: "flex",
+              gap: 20,
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+            }}
+          >
+            {/* Left: info */}
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: 16 }}>
+                {partner.name || partner.email}
+              </p>
+              <p style={{ margin: "0 0 12px", color: "#6b7280", fontSize: 13 }}>
+                {partner.email}
+              </p>
+
+              <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 14 }}>
+                <tbody>
+                  <tr>
+                    <td style={styles.td}>Orders delivered</td>
+                    <td style={{ ...styles.td, fontWeight: 600 }}>{partner.ordersDelivered}</td>
+                  </tr>
+                  <tr>
+                    <td style={styles.td}>Food they fronted</td>
+                    <td style={{ ...styles.td, fontWeight: 600 }}>₹{partner.foodAmountFronted}</td>
+                  </tr>
+                  <tr>
+                    <td style={styles.td}>Delivery fee earned</td>
+                    <td style={{ ...styles.td, fontWeight: 600 }}>₹{partner.deliveryFeesEarned}</td>
+                  </tr>
+                  <tr>
+                    <td style={styles.td}>Your cut (₹9 × {partner.ordersDelivered})</td>
+                    <td style={{ ...styles.td, fontWeight: 600, color: "#15803d" }}>
+                      −₹{partner.ordersDelivered * 9}
+                    </td>
+                  </tr>
+                  <tr style={{ backgroundColor: "#fef9c3" }}>
+                    <td style={{ ...styles.td, fontWeight: 700 }}>You owe</td>
+                    <td style={{ ...styles.td, fontWeight: 700, fontSize: 18, color: "#b45309" }}>
+                      ₹{partner.youOwe}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Right: QR code */}
+            <div style={{ minWidth: 160, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              {partner.qrCode ? (
+                <>
+                  <img
+                    src={partner.qrCode}
+                    alt="QR Code"
+                    style={{ width: 140, height: 140, objectFit: "contain", border: "1px solid #e5e7eb", borderRadius: 6 }}
+                  />
+                  <button
+                    onClick={() => setEditingQr({ email: partner.email, value: partner.qrCode || "", saving: false })}
+                    style={styles.smallBtn}
+                  >
+                    Change QR
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      width: 140,
+                      height: 140,
+                      border: "2px dashed #d1d5db",
+                      borderRadius: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#9ca3af",
+                      fontSize: 13,
+                      textAlign: "center",
+                      padding: 8,
+                    }}
+                  >
+                    No QR yet
+                  </div>
+                  <button
+                    onClick={() => setEditingQr({ email: partner.email, value: "", saving: false })}
+                    style={styles.smallBtn}
+                  >
+                    Add QR URL
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+
+      {/* QR edit modal */}
+      {editingQr && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 999,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 12,
+              padding: 28,
+              width: "100%",
+              maxWidth: 420,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <h3 style={{ margin: 0 }}>Set QR Code URL</h3>
+            <p style={{ margin: 0, color: "#6b7280", fontSize: 13 }}>
+              Upload the QR image to any image host (e.g. imgbb.com, Cloudinary) and paste the direct image URL below.
+            </p>
+            <input
+              autoFocus
+              type="text"
+              placeholder="https://i.ibb.co/..."
+              value={editingQr.value}
+              onChange={(e) => setEditingQr((prev) => ({ ...prev, value: e.target.value }))}
+              style={{ ...styles.input, fontSize: 13 }}
+            />
+            {editingQr.value && (
+              <img
+                src={editingQr.value}
+                alt="preview"
+                style={{ width: 120, height: 120, objectFit: "contain", border: "1px solid #e5e7eb", borderRadius: 6, alignSelf: "center" }}
+                onError={(e) => (e.target.style.display = "none")}
+              />
+            )}
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setEditingQr(null)} style={styles.smallBtn}>
+                Cancel
+              </button>
+              <button
+                onClick={() => saveQr(editingQr.email)}
+                disabled={editingQr.saving || !editingQr.value}
+                style={{ ...styles.loginBtn, padding: "8px 20px", marginTop: 0, opacity: editingQr.saving ? 0.6 : 1 }}
+              >
+                {editingQr.saving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ================= MAIN APP ================= */
 
 export default function App() {
@@ -292,6 +558,9 @@ export default function App() {
         <button onClick={togglePeakMode}>Turn {peakMode ? "OFF" : "ON"}</button>
       </div>
 
+      {/* ================= PAYOUTS ================= */}
+      <PayoutsSection baseUrl={BASE_URL} />
+
       {/* ================= DELIVERY APPROVALS ================= */}
       <h2>🛂 Pending Delivery Approvals ({pendingDelivery.length})</h2>
       {pendingDelivery.length === 0 ? (
@@ -393,5 +662,19 @@ const styles = {
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
+  },
+  td: {
+    padding: "5px 8px",
+    borderBottom: "1px solid #f3f4f6",
+    color: "#374151",
+  },
+  smallBtn: {
+    padding: "5px 12px",
+    border: "1px solid #d1d5db",
+    borderRadius: 6,
+    backgroundColor: "#f9fafb",
+    cursor: "pointer",
+    fontSize: 12,
+    color: "#374151",
   },
 };

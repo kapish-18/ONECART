@@ -7,9 +7,10 @@ import authRoutes from "./routes/auth.route.js";
 import orderRoutes from "./routes/order.routes.js";
 import deliveryRoutes from "./routes/delivery.routes.js";
 import systemRoutes from "./routes/system.routes.js";
-import adminAnalyticsRoutes from "./routes/admin.analytics.routes.js"; // ✅ FIX
+import adminAnalyticsRoutes from "./routes/admin.analytics.routes.js"; 
 import adminUserRoutes from "./routes/admin.users.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import adminPayoutsRoutes from "./routes/admin.payouts.routes.js";
 
 const app = express();
 
@@ -27,5 +28,6 @@ app.use("/delivery", deliveryRoutes);
 app.use("/payment", paymentRoutes);
 app.use("/system", systemRoutes);
 app.use("/admin/analytics", adminAnalyticsRoutes); // ✅ THIS WAS THE MISSING PIECE
+app.use("/admin/payouts", adminPayoutsRoutes);
 
 export default app;
