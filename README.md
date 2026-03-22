@@ -47,7 +47,7 @@ No app talks to another app directly. Every piece of data lives in MongoDB. The 
 
 | Home | Menu & Order | Order Tracking | Arrived Notification |
 |------|-------------|----------------|----------------------|
-| ![Home Screen](screenshots/user-home.jpeg) | ![Menu Screen](screenshots/user-menu.jpeg) | ![Order Tracking](screenshots/user-tracking.jpeg) |
+| ![Home Screen](screenshots/user-home.jpeg) | ![Menu Screen](screenshots/user-menu.jpeg) | ![Order Tracking](screenshots/user-tracking.jpeg) | ![Arrived Notification](screenshots/user-notification.jpeg) |
 
 ### Delivery App
 
