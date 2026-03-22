@@ -57,9 +57,19 @@ No app talks to another app directly. Every piece of data lives in MongoDB. The 
 
 ### Admin Panel
 
-| Dashboard | Orders | Analytics | Payouts |
-|-----------|--------|-----------|---------|
-| ![Dashboard](screenshots/admin-dashboard.png) | ![Orders](screenshots/admin-orders.png) | ![Analytics](screenshots/admin-analytics.png) | ![Payouts](screenshots/admin-payouts.png) |
+**Dashboard & Orders**
+
+| | |
+|:---:|:---:|
+| ![Dashboard](screenshots/admin-dashboard.png) | ![Orders](screenshots/admin-orders.png) |
+| Dashboard | Orders |
+
+**Analytics & Payouts**
+
+| | |
+|:---:|:---:|
+| ![Analytics](screenshots/admin-analytics.png) | ![Payouts](screenshots/admin-payouts.png) |
+| Analytics | Payouts |
 
 ---
 
