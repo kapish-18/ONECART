@@ -47,15 +47,13 @@ No app talks to another app directly. Every piece of data lives in MongoDB. The 
 
 | Home | Menu & Order | Order Tracking | Arrived Notification |
 |------|-------------|----------------|----------------------|
-| ![Home Screen](screenshots/user-home.png) | ![Menu Screen](screenshots/user-menu.png) | ![Order Tracking](screenshots/user-tracking.png) | ![Arrived](screenshots/user-arrived.png) |
-
-> 📸 *Add your screenshots to a `/screenshots` folder in this repo*
+| ![Home Screen](screenshots/user-home.jpeg) | ![Menu Screen](screenshots/user-menu.jpeg) | ![Order Tracking](screenshots/user-tracking.jpeg) |
 
 ### Delivery App
 
 | Available Orders | Assigned Order | Mark Arrived | Mark Delivered |
 |-----------------|----------------|--------------|----------------|
-| ![Available](screenshots/delivery-available.png) | ![Assigned](screenshots/delivery-assigned.png) | ![Arrived](screenshots/delivery-arrived.png) | ![Delivered](screenshots/delivery-delivered.png) |
+| ![Available](screenshots/delivery-available.jpeg) | ![Assigned](screenshots/delivery-assigned.jpeg) | ![Arrived](screenshots/delivery-arrived.jpeg) | ![Delivered](screenshots/delivery-delivered.jpeg) |
 
 ### Admin Panel
 
