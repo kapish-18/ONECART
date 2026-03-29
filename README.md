@@ -12,7 +12,7 @@
 [![Payments](https://img.shields.io/badge/Payments-Razorpay-02042B?style=flat&logo=razorpay)](https://razorpay.com)
 [![Status](https://img.shields.io/badge/Status-Live%20MVP-brightgreen?style=flat)]()
 
-**x delivery partners · y active users · z+ real orders · ₹n+ revenue**
+**x delivery partners · y active users · z+ real orders · ₹n+ revenue** 
 
 </div>
 
@@ -57,9 +57,19 @@ No app talks to another app directly. Every piece of data lives in MongoDB. The 
 
 ### Admin Panel
 
-| Dashboard | Orders | Analytics | Payouts |
-|-----------|--------|-----------|---------|
-| ![Dashboard](screenshots/admin-dashboard.png) | ![Orders](screenshots/admin-orders.png) | ![Analytics](screenshots/admin-analytics.png) | ![Payouts](screenshots/admin-payouts.png) |
+**Dashboard & Orders**
+
+| | |
+|:---:|:---:|
+| ![Dashboard](screenshots/admin-dashboard.png) | ![Orders](screenshots/admin-orders.png) |
+| Dashboard | Orders |
+
+**Analytics & Payouts**
+
+| | |
+|:---:|:---:|
+| ![Analytics](screenshots/admin-analytics.png) | ![Payouts](screenshots/admin-payouts.png) |
+| Analytics | Payouts |
 
 ---
 
@@ -297,7 +307,6 @@ VITE_ADMIN_HASH=   # SHA-256 of admin password
 
 Built, validated, and shipped as a solo project. Validated the idea before writing code, iterated based on real user feedback, debugged real production issues.
 
-> *"The best way to learn systems is to build one that real people depend on."*
 
 ---
 
