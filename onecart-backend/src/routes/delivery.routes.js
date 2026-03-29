@@ -103,9 +103,19 @@ router.post("/accept", async (req, res) => {
       { _id: orderId, status: "CREATED" },
       { $set: { deliveryPerson: user._id, status: "ASSIGNED" } },
       { new: true }
-    ).populate("user", "email hostelBlock");
+    ).populate("user", "email hostelBlock pushToken"); // ✅ CHANGE 1: added pushToken
 
     if (!order) return res.status(400).json({ error: "Order not available" });
+
+    // ✅ CHANGE 2: notify user that delivery partner accepted
+    if (order.user?.pushToken) {
+      await sendPushNotification(
+        order.user.pushToken,
+        "🛵 Delivery Partner Assigned!",
+        "Someone accepted your order ! Please Complete payment in my orders when pay button appears ."
+      );
+    }
+
     res.json({ message: "Order accepted", order });
   } catch {
     res.status(500).json({ error: "Failed to accept order" });
@@ -182,7 +192,6 @@ router.post("/arrived", async (req, res) => {
     order.arrivalNote = arrivalNote || "Your delivery partner has arrived";
     await order.save();
 
-    // Send push notification to the USER
     if (order.user?.pushToken) {
       await sendPushNotification(
         order.user.pushToken,
