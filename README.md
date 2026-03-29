@@ -307,7 +307,6 @@ VITE_ADMIN_HASH=   # SHA-256 of admin password
 
 Built, validated, and shipped as a solo project. Validated the idea before writing code, iterated based on real user feedback, debugged real production issues.
 
-> *"The best way to learn systems is to build one that real people depend on."*
 
 ---
 
