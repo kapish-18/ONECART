@@ -12,7 +12,7 @@
 [![Payments](https://img.shields.io/badge/Payments-Razorpay-02042B?style=flat&logo=razorpay)](https://razorpay.com)
 [![Status](https://img.shields.io/badge/Status-Live%20MVP-brightgreen?style=flat)]()
 
-**x delivery partners · y active users · z+ real orders · ₹n+ revenue** (not started yet - waiting for razorpay activation)
+**x delivery partners · y active users · z+ real orders · ₹n+ revenue** 
 
 </div>
 
