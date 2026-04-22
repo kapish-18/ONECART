@@ -13,7 +13,7 @@
 [![Status](https://img.shields.io/badge/Status-Live%20MVP-brightgreen?style=flat)]()
 
 <!-- STATS_START -->
-**x** delivery partners · **y** active users · **z**+ real orders · ₹**n**+ revenue
+**1** delivery partners · **2** active users · **1**+ real orders · ₹**29**+ revenue
 <!-- STATS_END -->
 
 </div>
