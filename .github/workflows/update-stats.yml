@@ -1,0 +1,88 @@
+name: Update README Stats
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # runs every 6 hours
+  workflow_dispatch:          # lets you trigger it manually from GitHub UI
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write         # needed so the bot can push the README commit
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Wake up Render (cold start prevention)
+        run: |
+          echo "Pinging backend to wake it up..."
+          curl -s --max-time 30 https://onecart-s238.onrender.com/health || true
+          sleep 5
+
+      - name: Fetch live stats from backend
+        id: fetch
+        run: |
+          echo "Fetching stats..."
+
+          RESPONSE=$(curl -s --max-time 30 https://onecart-s238.onrender.com/stats)
+          echo "Raw response: $RESPONSE"
+
+          # Validate we got a real JSON response, not an error
+          if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+            DELIVERIES=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['deliveries'])")
+            USERS=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['users'])")
+            REVENUE=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['revenue'])")
+
+            echo "deliveries=$DELIVERIES" >> $GITHUB_OUTPUT
+            echo "users=$USERS" >> $GITHUB_OUTPUT
+            echo "revenue=$REVENUE" >> $GITHUB_OUTPUT
+            echo "success=true" >> $GITHUB_OUTPUT
+
+            echo "✅ Stats fetched — Deliveries: $DELIVERIES, Users: $USERS, Revenue: ₹$REVENUE"
+          else
+            echo "success=false" >> $GITHUB_OUTPUT
+            echo "❌ Failed to parse stats response. Skipping README update."
+          fi
+
+      - name: Update README between marker comments
+        if: steps.fetch.outputs.success == 'true'
+        run: |
+          DELIVERIES="${{ steps.fetch.outputs.deliveries }}"
+          USERS="${{ steps.fetch.outputs.users }}"
+          REVENUE="${{ steps.fetch.outputs.revenue }}"
+
+          # Build the new stats line
+          NEW_LINE="**${DELIVERIES}** delivery partners · **${USERS}** active users · **${DELIVERIES}**+ real orders · ₹**${REVENUE}**+ revenue"
+
+          # Replace everything between the marker comments (single-line replacement)
+          python3 - <<EOF
+          import re
+
+          with open("README.md", "r") as f:
+              content = f.read()
+
+          new_content = re.sub(
+              r'(<!-- STATS_START -->).*?(<!-- STATS_END -->)',
+              r'\1\n' + "${NEW_LINE}" + r'\n\2',
+              content,
+              flags=re.DOTALL
+          )
+
+          with open("README.md", "w") as f:
+              f.write(new_content)
+
+          print("README updated successfully")
+          EOF
+
+      - name: Commit and push if README changed
+        if: steps.fetch.outputs.success == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet README.md || (
+            git add README.md &&
+            git commit -m "chore: update live stats [skip ci]" &&
+            git push
+          )
