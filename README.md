@@ -310,6 +310,7 @@ VITE_ADMIN_HASH=   # SHA-256 of admin password
 - [ ] Expand to 3+ outlets
 - [ ] In-app chat between user and delivery partner
 - [ ] EAS Build for production APK distribution
+- [ ] Plan to add AI api based order text structuring by taking text based order from user and AI structures it into proper JSON to send to backend and Database
 
 ---
 
