@@ -287,7 +287,7 @@ VITE_ADMIN_HASH=   # SHA-256 of admin password
 
 **Email provider migration** — Gmail SMTP hit timeouts on Render's free tier. Resend had sandbox restrictions. Migrated to Brevo's API-based transactional email which worked reliably in production.
 
-**Windows path length limit** — `node_modules` nesting in React Native projects exceeds Windows' 260-character path limit. Resolved with `\\?\` long path prefix and enabling long paths in Windows registry.
+**Windows path length limit** — `node_modules` nesting in React Native projects exceeds Windows' 260-character path limit. Even with `\\?\` long path prefix and enabling long paths in Windows registry , problem was not solved . Finally mitigated the main folder directly to the disk drive C to have a short native path .
 
 **Atomic order acceptance** — Multiple delivery partners could theoretically accept the same order simultaneously. Used MongoDB's `findOneAndUpdate` with a status condition to make acceptance atomic — only one partner wins.
 
