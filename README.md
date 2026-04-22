@@ -22,11 +22,21 @@
 
 ## The Problem
 
-Traditional food apps make you place **separate orders for separate outlets** — meaning separate payments, separate waits, separate tracking. If you want food from a pizza place *and* the biryani dhaba, you're doing it twice.
+**Problem 1 — For users:** Traditional food apps make you place separate orders 
+for separate outlets — separate payments, separate waits, separate tracking. 
+If you want food from a pizza place *and* the biryani dhaba, you're doing it twice.
 
-**OneCart collapses that into one flow.** Pick from multiple outlets, pay once, track one order, one delivery partner brings everything.
+**Problem 2 — For vendors:** 7.5 million street food vendors in India are completely 
+locked out of Swiggy and Zomato. Not because they don't want to be there — but because 
+those platforms require a merchant dashboard, digital menus, and active order management. 
+A dhaba uncle running a gas stove doesn't have any of that.
 
----
+**OneCart solves both simultaneously.** Users get multi-outlet checkout in one flow. 
+Vendors get onboarded with zero tech on their side — just a PDF menu photo and a 
+phone call. No dashboard. No app. No setup. The delivery partner acts as the bridge.
+
+> This constraint — being forced to onboard campus vendors with no infrastructure — 
+> turned into the biggest structural difference from every existing platform.
 
 ## What Was Built
 
