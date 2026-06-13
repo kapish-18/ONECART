@@ -87,33 +87,25 @@ No app talks to another app directly. Every piece of data lives in MongoDB. The 
 
 ## Architecture
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   User App      │    │  Delivery App   │    │   Admin Panel   │
-│  (React Native) │    │  (React Native) │    │  (Vite React)   │
-└────────┬────────┘    └────────┬────────┘    └────────┬────────┘
-         │                      │                       │
-         │         HTTP REST API (all routes)           │
-         │                      │                       │
-         └──────────────────────┼───────────────────────┘
-                                │
-                    ┌───────────▼────────────┐
-                    │    onecart-backend     │
-                    │  Node.js + Express     │
-                    │                        │
-                    │  /auth   /orders       │
-                    │  /delivery  /payment   │
-                    │  /system  /admin       │
-                    └───────────┬────────────┘
-                                │
-                    ┌───────────▼────────────┐
-                    │    MongoDB Atlas        │
-                    │                        │
-                    │  Users · Orders        │
-                    │  Outlets · SystemConfig│
-                    └────────────────────────┘
-```
+```mermaid
+flowchart TB
 
+    subgraph Frontend
+        UA[User App]
+        DA[Delivery App]
+        AP[Admin Panel]
+    end
+
+    BE[Node.js + Express Backend]
+
+    DB[(MongoDB Atlas)]
+
+    UA -->|REST API| BE
+    DA -->|REST API| BE
+    AP -->|REST API| BE
+
+    BE --> DB
+```
 ---
 
 ## Order Lifecycle
