@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, Linking } from "react-native";
 import { useState } from "react";
 import { BASE_URL } from "../config/api";
 
@@ -78,6 +78,32 @@ export default function LoginScreen({ navigation }: any) {
           {loading ? "Sending..." : "Send OTP"}
         </Text>
       </TouchableOpacity>
+
+      <Text
+        style={{
+          fontSize: 12,
+          color: "#666",
+          textAlign: "center",
+          marginTop: 24,
+          lineHeight: 18,
+        }}
+      >
+        By continuing, you agree to OneCart's{" "}
+        <Text
+          style={{ textDecorationLine: "underline", color: "#4f46e5" }}
+          onPress={() => Linking.openURL(`${BASE_URL}/terms`)}
+        >
+          Terms of Service
+        </Text>{" "}
+        and{" "}
+        <Text
+          style={{ textDecorationLine: "underline", color: "#4f46e5" }}
+          onPress={() => Linking.openURL(`${BASE_URL}/privacy`)}
+        >
+          Privacy Policy
+        </Text>
+        .
+      </Text>
     </View>
   );
 }

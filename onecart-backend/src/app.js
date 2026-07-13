@@ -12,6 +12,7 @@ import adminUserRoutes from "./routes/admin.users.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import adminPayoutsRoutes from "./routes/admin.payouts.routes.js";
 import publicStatsRoutes from "./routes/public.stats.route.js";
+import legalRoutes from "./routes/legal.route.js";
 
 const app = express();
 
@@ -31,5 +32,6 @@ app.use("/system", systemRoutes);
 app.use("/admin/analytics", adminAnalyticsRoutes); 
 app.use("/admin/payouts", adminPayoutsRoutes);
 app.use("/stats", publicStatsRoutes);
+app.use("/", legalRoutes);
 
 export default app;
