@@ -174,7 +174,7 @@ export const getPrivacyPolicy = () => {
     </ul>
 
     <h2>5. Contact Us</h2>
-    <p>If you have any questions or wish to exercise your data rights, please contact our support email at <strong>onecart.vit@gmail.com</strong>.</p>
+    <p>If you have any questions or wish to exercise your data rights, please contact our support email at <strong>onecartvit@gmail.com</strong>.</p>
   `;
   return renderLegalPage("Privacy Policy", "July 13, 2026", content);
 };
@@ -242,7 +242,7 @@ export const getCancellationAndRefund = () => {
     </ul>
 
     <h2>4. Delivery Issues & Disputes</h2>
-    <p>If your order is marked as delivered but you did not receive it, or if there is a severe dispute regarding the delivery, please contact us at <strong>onecart.vit@gmail.com</strong> with your order ID within 1 hour of the delivery window. We will investigate and process partial or full refunds where delivery failure is verified.</p>
+    <p>If your order is marked as delivered but you did not receive it, or if there is a severe dispute regarding the delivery, please contact us at <strong>onecartvit@gmail.com</strong> with your order ID within 1 hour of the delivery window. We will investigate and process partial or full refunds where delivery failure is verified.</p>
   `;
   return renderLegalPage("Cancellation & Refund Policy", "July 13, 2026", content);
 };
@@ -253,8 +253,8 @@ export const getShippingAndDelivery = () => {
 
     <h2>1. Delivery Coverage Area</h2>
     <ul>
-      <li>Our operations are strictly limited to the boundaries of the <strong>Vite University (VIT), Vellore Campus</strong>.</li>
-      <li>We deliver specifically to the designated hostel gates or blocks (e.g., Men's Hostel Blocks A-Y, Ladies' Hostel Blocks A-G) as selected in the app. We do <strong>not</strong> deliver to off-campus locations.</li>
+      <li>Our operations are strictly limited to the boundaries of the <strong>Vit University (VIT), Vellore Campus</strong>.</li>
+      <li>We deliver specifically to the designated hostel gates or blocks (e.g., Men's Hostel Blocks A-T) as selected in the app. We do <strong>not</strong> deliver to off-campus locations.</li>
     </ul>
 
     <h2>2. Delivery Process</h2>
@@ -304,7 +304,7 @@ export const getContactUs = () => {
         </tr>
         <tr>
           <td style="padding: 8px 0; font-weight: 600; color: #4b5563;">Support Email:</td>
-          <td style="padding: 8px 0; color: #1f2937;"><a href="mailto:onecart.vit@gmail.com" style="color: #4f46e5; text-decoration: none;">onecart.vit@gmail.com</a></td>
+          <td style="padding: 8px 0; color: #1f2937;"><a href="mailto:onecartvit@gmail.com" style="color: #4f46e5; text-decoration: none;">onecartvit@gmail.com</a></td>
         </tr>
         <tr>
           <td style="padding: 8px 0; font-weight: 600; color: #4b5563; vertical-align: top;">Address:</td>

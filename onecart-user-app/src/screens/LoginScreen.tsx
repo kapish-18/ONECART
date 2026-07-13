@@ -1,8 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, Alert, Linking } from "react-native";
 import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-
-const BASE_URL = "https://onecart-s238.onrender.com";
+import { BASE_URL } from "../config/api";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
