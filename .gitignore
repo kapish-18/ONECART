@@ -153,3 +153,7 @@ google-services-info.plist
 **/onecart-delivery-680483801122.json
 **/onecart-delivery-firebase-adminsdk-fbsvc-4d228cfde1.json
 **/onecart-delivery-firebase-adminsdk-fbsvc-24f903e090.json
+
+# Expo cache
+**/.expo/
+**/.expo-shared/
