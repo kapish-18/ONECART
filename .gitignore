@@ -135,8 +135,7 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# Firebase
-google-services.json
+# Firebase (iOS only — Android google-services.json is needed for EAS Build)
 google-services-info.plist
 
 # Environment variables
